@@ -1,0 +1,24 @@
+//
+//  HomePage.swift
+//  GeoSome
+//
+//  Created by Muhammad Pandu Royyan on 28/10/26.
+//
+
+import SwiftUI
+
+struct HomePage: View {
+    var body: some View {
+        VStack {
+            Image(systemName: "globe")
+                .imageScale(.large)
+                .foregroundStyle(.tint)
+            Text("Hello, world!")
+        }
+        .padding()
+    }
+}
+
+#Preview {
+    HomePage()
+}
