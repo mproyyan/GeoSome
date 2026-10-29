@@ -1,0 +1,14 @@
+# Skills & Agent Tooling
+.agents/
+skills-lock.json
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+build/
+*.moved-aside
+*.xcuserstate
