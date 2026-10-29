@@ -8,11 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		A60BFC2A3091A6A300D1BA6E /* readme.md in Resources */ = {isa = PBXBuildFile; fileRef = A60BFC293091A6A300D1BA6E /* readme.md */; };
+		A60BFC313092D2BF00D1BA6E /* .swiftformat in Resources */ = {isa = PBXBuildFile; fileRef = A60BFC303092D2B500D1BA6E /* .swiftformat */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A60BFC1B3091A38700D1BA6E /* GeoSome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GeoSome.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A60BFC293091A6A300D1BA6E /* readme.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = readme.md; sourceTree = "<group>"; };
+		A60BFC303092D2B500D1BA6E /* .swiftformat */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftformat; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -35,6 +37,7 @@
 		A60BFC123091A38700D1BA6E = {
 			isa = PBXGroup;
 			children = (
+				A60BFC303092D2B500D1BA6E /* .swiftformat */,
 				A60BFC293091A6A300D1BA6E /* readme.md */,
 				A60BFC1D3091A38700D1BA6E /* GeoSome */,
 				A60BFC1C3091A38700D1BA6E /* Products */,
@@ -109,6 +112,7 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				A60BFC2A3091A6A300D1BA6E /* readme.md in Resources */,
+				A60BFC313092D2BF00D1BA6E /* .swiftformat in Resources */,
 			);
 		};
 /* End PBXResourcesBuildPhase section */
