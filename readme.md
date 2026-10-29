@@ -55,3 +55,33 @@ Each feature module follows the MVVM structure:
 | **`Views/`** | Primary screens and user interfaces that make up the feature. |
 | **`ViewModels/`** | Presentation and state management logic connecting Views and Models (e.g., using `@Observable` or `ObservableObject`). |
 | **`Component/`** | Reusable UI components and sub-views scoped specifically to the feature (e.g., custom cards, list items, badges). |
+
+---
+
+## 🛠️ Code Formatting (SwiftFormat)
+
+This project uses [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) to enforce consistent code style and formatting. Configuration options (such as 2-space indentation and Swift 6.0 rules) are set in `.swiftformat`.
+
+### Installation
+
+Install via [Homebrew](https://brew.sh/):
+
+```bash
+brew install swiftformat
+```
+
+### Usage
+
+Format all Swift files in the source directory:
+
+```bash
+swiftformat GeoSome/
+```
+
+Check formatting rules without modifying files (lint mode):
+
+```bash
+swiftformat --lint GeoSome/
+```
+
+*(Optional)* You can also integrate SwiftFormat as an Xcode Build Phase Run Script or install the [SwiftFormat for Xcode](https://github.com/nicklockwood/SwiftFormat#xcode-source-editor-extension) extension.
