@@ -1,7 +1,4 @@
 import SwiftUI
-#if canImport(UIKit)
-  import UIKit
-#endif
 
 public struct EmptyProjectStateView: View {
   public init() {}
@@ -39,7 +36,5 @@ public struct EmptyProjectStateView: View {
 #Preview {
   EmptyProjectStateView()
     .frame(height: 260)
-  #if canImport(UIKit)
-    .background(Color(uiColor: .systemBackground))
-  #endif
+    .background(.background)
 }
