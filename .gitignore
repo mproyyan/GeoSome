@@ -12,3 +12,5 @@ DerivedData/
 build/
 *.moved-aside
 *.xcuserstate
+
+.claude/
