@@ -1,10 +1,10 @@
 import SwiftUI
 
-public struct BoundaryCoordinateSheetView: View {
-  public var onHelpTap: (() -> Void)?
-  public var onAddCoordinateTap: (() -> Void)?
+struct BoundaryCoordinateSheetView: View {
+  var onHelpTap: (() -> Void)?
+  var onAddCoordinateTap: (() -> Void)?
 
-  public init(
+  init(
     onHelpTap: (() -> Void)? = nil,
     onAddCoordinateTap: (() -> Void)? = nil
   ) {
@@ -12,7 +12,7 @@ public struct BoundaryCoordinateSheetView: View {
     self.onAddCoordinateTap = onAddCoordinateTap
   }
 
-  public var body: some View {
+  var body: some View {
     VStack(spacing: 16) {
       // Drag handle
       Capsule()

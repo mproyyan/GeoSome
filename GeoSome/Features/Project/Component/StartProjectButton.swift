@@ -1,14 +1,14 @@
 import SwiftUI
 
-public struct StartProjectButton: View {
+struct StartProjectButton: View {
   private let action: (() -> Void)?
   @State private var feedbackTrigger: Bool = false
 
-  public init(action: (() -> Void)? = nil) {
+  init(action: (() -> Void)? = nil) {
     self.action = action
   }
 
-  public var body: some View {
+  var body: some View {
     Button(action: {
       feedbackTrigger.toggle()
       action?()

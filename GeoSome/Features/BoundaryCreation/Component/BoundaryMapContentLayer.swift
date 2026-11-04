@@ -1,32 +1,22 @@
 import MapKit
 import SwiftUI
 
-public struct BoundaryMapContentLayer: View {
-  @Binding public var cameraPosition: MapCameraPosition
-  @Binding public var isSatelliteStyle: Bool
-  public var onMapTap: ((CLLocationCoordinate2D) -> Void)?
+struct BoundaryMapContentLayer: View {
+  @Binding var cameraPosition: MapCameraPosition
+  var isSatelliteStyle: Bool
+  var onMapTap: ((CLLocationCoordinate2D) -> Void)?
 
-  public static let defaultCenter = CLLocationCoordinate2D(
-    latitude: -6.2415,
-    longitude: 106.8315
-  )
-
-  public static let defaultSpan = MKCoordinateSpan(
-    latitudeDelta: 0.012,
-    longitudeDelta: 0.012
-  )
-
-  public init(
+  init(
     cameraPosition: Binding<MapCameraPosition>,
-    isSatelliteStyle: Binding<Bool> = .constant(false),
+    isSatelliteStyle: Bool = false,
     onMapTap: ((CLLocationCoordinate2D) -> Void)? = nil
   ) {
     _cameraPosition = cameraPosition
-    _isSatelliteStyle = isSatelliteStyle
+    self.isSatelliteStyle = isSatelliteStyle
     self.onMapTap = onMapTap
   }
 
-  public var body: some View {
+  var body: some View {
     MapReader { proxy in
       Map(position: $cameraPosition) {
         UserAnnotation()
@@ -45,16 +35,11 @@ public struct BoundaryMapContentLayer: View {
 
 #Preview {
   StatefulPreviewWrapper(
-    MapCameraPosition.region(
-      MKCoordinateRegion(
-        center: BoundaryMapContentLayer.defaultCenter,
-        span: BoundaryMapContentLayer.defaultSpan
-      )
-    )
+    MapCameraPosition.region(BoundaryMapConfiguration.defaultRegion)
   ) { position in
     BoundaryMapContentLayer(
       cameraPosition: position,
-      isSatelliteStyle: .constant(false)
+      isSatelliteStyle: false
     )
   }
 }

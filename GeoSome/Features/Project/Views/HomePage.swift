@@ -1,19 +1,20 @@
 import SwiftUI
 
-public struct HomePage: View {
-  @State public var viewModel: ProjectViewModel
-  @State private var navigateToBoundaryCreation: Bool = false
-  public var onStartProject: (() -> Void)?
+struct HomePage: View {
+  @State private var viewModel: ProjectViewModel
+  var onStartProject: (() -> Void)?
 
-  public init(
-    viewModel: ProjectViewModel = ProjectViewModel(),
+  init(
+    viewModel: ProjectViewModel? = nil,
     onStartProject: (() -> Void)? = nil
   ) {
-    _viewModel = State(initialValue: viewModel)
+    _viewModel = State(initialValue: viewModel ?? ProjectViewModel())
     self.onStartProject = onStartProject
   }
 
-  public var body: some View {
+  var body: some View {
+    @Bindable var viewModel = viewModel
+
     GeometryReader { geometry in
       ZStack(alignment: .top) {
         // Fullscreen Hero Background
@@ -41,7 +42,7 @@ public struct HomePage: View {
             if let onStartProject {
               onStartProject()
             } else {
-              navigateToBoundaryCreation = true
+              viewModel.startNewProject()
             }
           })
           .padding(.top, 4)
@@ -55,13 +56,13 @@ public struct HomePage: View {
         ProjectListSheet(
           projects: viewModel.projects,
           onSelectProject: { project in
-            viewModel.selectedProject = project
+            viewModel.selectProject(project)
           }
         )
       }
       .ignoresSafeArea()
       .toolbar(.hidden, for: .navigationBar)
-      .navigationDestination(isPresented: $navigateToBoundaryCreation) {
+      .navigationDestination(isPresented: $viewModel.isShowingBoundaryCreation) {
         BoundaryCreationView()
       }
     }

@@ -1,15 +1,15 @@
 import SwiftUI
 
-public struct ProjectListSheet: View {
-  public let projects: [Project]
-  public var onSelectProject: ((Project) -> Void)?
-  public var minHeightRatio: CGFloat
-  public var maxHeightRatio: CGFloat
+struct ProjectListSheet: View {
+  let projects: [Project]
+  var onSelectProject: ((Project) -> Void)?
+  var minHeightRatio: CGFloat
+  var maxHeightRatio: CGFloat
 
   @State private var isExpanded: Bool = false
   @State private var dragOffset: CGFloat = 0
 
-  public init(
+  init(
     projects: [Project],
     minHeightRatio: CGFloat = 0.44,
     maxHeightRatio: CGFloat = 0.88,
@@ -21,7 +21,7 @@ public struct ProjectListSheet: View {
     self.onSelectProject = onSelectProject
   }
 
-  public var body: some View {
+  var body: some View {
     GeometryReader { geometry in
       let screenHeight = geometry.size.height
       let minHeight = screenHeight * minHeightRatio

@@ -1,9 +1,7 @@
 import SwiftUI
 
-public struct BoundaryPillButtonStyle: ButtonStyle {
-  public init() {}
-
-  public func makeBody(configuration: Configuration) -> some View {
+struct BoundaryPillButtonStyle: ButtonStyle {
+  func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
       .opacity(configuration.isPressed ? 0.85 : 1.0)

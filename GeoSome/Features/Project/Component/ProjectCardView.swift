@@ -1,18 +1,21 @@
 import SwiftUI
 
-public struct ProjectCardView: View {
-  public let project: Project
+struct ProjectCardView: View {
+  let project: Project
+  let formattedLastEdited: String
   private let action: (() -> Void)?
 
-  public init(
+  init(
     project: Project,
+    formattedLastEdited: String? = nil,
     action: (() -> Void)? = nil
   ) {
     self.project = project
+    self.formattedLastEdited = formattedLastEdited ?? ProjectViewModel.formatLastEdited(project.lastEdited)
     self.action = action
   }
 
-  public var body: some View {
+  var body: some View {
     Button(action: {
       action?()
     }) {
@@ -31,7 +34,7 @@ public struct ProjectCardView: View {
     }
     .buttonStyle(CardButtonStyle())
     .accessibilityElement(children: .combine)
-    .accessibilityLabel("\(project.name), \(project.formattedLastEdited)")
+    .accessibilityLabel("\(project.name), \(formattedLastEdited)")
     .accessibilityHint("Opens this project")
   }
 
@@ -55,7 +58,7 @@ public struct ProjectCardView: View {
         .foregroundStyle(.primary)
         .lineLimit(1)
 
-      Text(project.formattedLastEdited)
+      Text(formattedLastEdited)
         .font(.system(size: 10, weight: .regular))
         .foregroundStyle(.secondary)
         .lineLimit(1)

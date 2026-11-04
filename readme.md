@@ -18,7 +18,7 @@ GeoSome/
 │       │   ├── ViewModels/
 │       │   └── Component/
 │       │
-│       └── ConstructionArea/
+│       └── BoundaryCreation/
 │           ├── Models/
 │           ├── Views/
 │           ├── ViewModels/
@@ -42,7 +42,7 @@ Code is organized into independent feature modules inside `Features/` to improve
 
 Current modules:
 - **`Project/`**: Handles all logic, flows, and UI related to projects.
-- **`ConstructionArea/`**: Manages all workflows, maps, and information related to construction areas.
+- **`BoundaryCreation/`**: Manages workflows, map interaction, and UI for defining project boundaries.
 
 ---
 

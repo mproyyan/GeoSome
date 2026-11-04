@@ -1,16 +1,16 @@
 import SwiftUI
 
-public struct BoundaryToolbarContent: ToolbarContent {
-  @Binding public var projectName: String
-  public var canUndo: Bool
-  public var canRedo: Bool
-  public var canCreateProject: Bool
-  public var onResetAnchorTap: (() -> Void)?
-  public var onUndoTap: (() -> Void)?
-  public var onRedoTap: (() -> Void)?
-  public var onCreateProjectTap: (() -> Void)?
+struct BoundaryToolbarContent: ToolbarContent {
+  @Binding var projectName: String
+  var canUndo: Bool
+  var canRedo: Bool
+  var canCreateProject: Bool
+  var onResetAnchorTap: (() -> Void)?
+  var onUndoTap: (() -> Void)?
+  var onRedoTap: (() -> Void)?
+  var onCreateProjectTap: (() -> Void)?
 
-  public init(
+  init(
     projectName: Binding<String>,
     canUndo: Bool = false,
     canRedo: Bool = false,
@@ -30,7 +30,7 @@ public struct BoundaryToolbarContent: ToolbarContent {
     self.onCreateProjectTap = onCreateProjectTap
   }
 
-  public var body: some ToolbarContent {
+  var body: some ToolbarContent {
     // Leading: Editable Project Name (next to native back button)
     ToolbarItem(placement: .topBarLeading) {
       BoundaryProjectNameView(projectName: $projectName)
@@ -97,7 +97,6 @@ public struct BoundaryToolbarContent: ToolbarContent {
         }) {
           Text("Create Project")
             .font(.system(size: 14, weight: .semibold))
-//            .foregroundStyle(canCreateProject ? Color.white : Color.black)
             .padding(.horizontal, 16)
             .frame(height: 36)
             .clipShape(Capsule())
@@ -114,16 +113,16 @@ public struct BoundaryToolbarContent: ToolbarContent {
   }
 }
 
-public struct BoundaryProjectNameView: View {
-  @Binding public var projectName: String
+struct BoundaryProjectNameView: View {
+  @Binding var projectName: String
   @State private var isEditing: Bool = false
   @FocusState private var isFocused: Bool
 
-  public init(projectName: Binding<String>) {
+  init(projectName: Binding<String>) {
     _projectName = projectName
   }
 
-  public var body: some View {
+  var body: some View {
     HStack(spacing: 6) {
       if isEditing {
         TextField("Project name", text: $projectName)
@@ -155,7 +154,7 @@ public struct BoundaryProjectNameView: View {
             Text(projectName.isEmpty ? "Project name" : projectName)
               .font(.system(size: 17, weight: .semibold))
               .foregroundStyle(Color.primary)
-            
+
             Image(systemName: "pencil")
               .font(.system(size: 14, weight: .semibold))
               .foregroundStyle(Color.primary)

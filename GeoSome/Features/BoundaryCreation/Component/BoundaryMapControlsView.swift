@@ -1,11 +1,11 @@
 import SwiftUI
 
-public struct BoundaryMapControlsView: View {
-  public var isSatelliteStyle: Bool
-  public var onToggleMapLayer: (() -> Void)?
-  public var onFocusLocation: (() -> Void)?
+struct BoundaryMapControlsView: View {
+  var isSatelliteStyle: Bool
+  var onToggleMapLayer: (() -> Void)?
+  var onFocusLocation: (() -> Void)?
 
-  public init(
+  init(
     isSatelliteStyle: Bool = false,
     onToggleMapLayer: (() -> Void)? = nil,
     onFocusLocation: (() -> Void)? = nil
@@ -15,7 +15,7 @@ public struct BoundaryMapControlsView: View {
     self.onFocusLocation = onFocusLocation
   }
 
-  public var body: some View {
+  var body: some View {
     VStack(spacing: 10) {
       // Map Layer Toggle Button
       Button(action: {

@@ -1,34 +1,85 @@
 import Foundation
 import Observation
 
+@MainActor
 @Observable
-public final class ProjectViewModel {
-  public var projects: [Project]
-  public var selectedProject: Project?
+final class ProjectViewModel {
+  private(set) var projects: [Project]
+  private(set) var selectedProject: Project?
+  var isShowingBoundaryCreation: Bool = false
 
-  public init(projects: [Project] = Project.sampleProjects) {
-    self.projects = projects
+  private static let timeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "h:mm a"
+    return formatter
+  }()
+
+  private static let monthDayFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMM d"
+    return formatter
+  }()
+
+  init(projects: [Project]? = nil) {
+    self.projects = projects ?? Project.sampleProjects
   }
 
-  public var hasProjects: Bool {
+  var hasProjects: Bool {
     !projects.isEmpty
   }
 
-  public func addProject(name: String) {
+  // MARK: - Intents
+
+  func startNewProject() {
+    isShowingBoundaryCreation = true
+  }
+
+  func selectProject(_ project: Project) {
+    selectedProject = project
+  }
+
+  func addProject(name: String) {
     guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
     let newProject = Project(name: name, lastEdited: Date())
     projects.insert(newProject, at: 0)
   }
 
-  public func deleteProject(id: UUID) {
+  func deleteProject(id: UUID) {
     projects.removeAll { $0.id == id }
   }
 
-  public func clearAllProjects() {
+  func clearAllProjects() {
     projects.removeAll()
   }
 
-  public func loadSampleProjects() {
+  func loadSampleProjects() {
     projects = Project.sampleProjects
+  }
+
+  // MARK: - Presentation Formatting
+
+  func formattedLastEdited(for project: Project, relativeTo now: Date = Date()) -> String {
+    Self.formatLastEdited(project.lastEdited, relativeTo: now)
+  }
+
+  static func formatLastEdited(
+    _ date: Date,
+    relativeTo now: Date = Date(),
+    calendar: Calendar = .current
+  ) -> String {
+    let timeString = timeFormatter.string(from: date)
+
+    if calendar.isDateInToday(date) {
+      let interval = now.timeIntervalSince(date)
+      if interval < 120 {
+        return "Edited just now"
+      }
+      return "Edited today at \(timeString)"
+    } else if calendar.isDateInYesterday(date) {
+      return "Edited yesterday at \(timeString)"
+    } else {
+      let dateString = monthDayFormatter.string(from: date)
+      return "Edited \(dateString) at \(timeString)"
+    }
   }
 }

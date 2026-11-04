@@ -1,9 +1,7 @@
 import SwiftUI
 
-public struct EmptyProjectStateView: View {
-  public init() {}
-
-  public var body: some View {
+struct EmptyProjectStateView: View {
+  var body: some View {
     VStack(spacing: 12) {
       ZStack {
         RoundedRectangle(cornerRadius: 12, style: .continuous)

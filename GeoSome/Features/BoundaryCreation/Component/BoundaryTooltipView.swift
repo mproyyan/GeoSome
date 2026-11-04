@@ -1,11 +1,11 @@
 import SwiftUI
 
-public struct BoundaryTooltipView: View {
-  @Binding public var isVisible: Bool
-  public var message: String
-  public var onDismiss: (() -> Void)?
+struct BoundaryTooltipView: View {
+  @Binding var isVisible: Bool
+  var message: String
+  var onDismiss: (() -> Void)?
 
-  public init(
+  init(
     isVisible: Binding<Bool>,
     message: String = "Tap the map to add a boundary point.",
     onDismiss: (() -> Void)? = nil
@@ -15,7 +15,7 @@ public struct BoundaryTooltipView: View {
     self.onDismiss = onDismiss
   }
 
-  public var body: some View {
+  var body: some View {
     if isVisible {
       VStack(alignment: .leading, spacing: 0) {
         HStack(spacing: 8) {
