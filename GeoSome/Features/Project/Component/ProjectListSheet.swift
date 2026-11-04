@@ -104,8 +104,8 @@ public struct ProjectListSheet: View {
           style: .continuous
         )
       )
-        .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: -4)
-        .frame(maxHeight: .infinity, alignment: .bottom)
+      .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: -4)
+      .frame(maxHeight: .infinity, alignment: .bottom)
     }
   }
 }

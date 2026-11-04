@@ -2,9 +2,15 @@ import SwiftUI
 
 public struct HomePage: View {
   @State public var viewModel: ProjectViewModel
+  @State private var navigateToBoundaryCreation: Bool = false
+  public var onStartProject: (() -> Void)?
 
-  public init(viewModel: ProjectViewModel = ProjectViewModel()) {
+  public init(
+    viewModel: ProjectViewModel = ProjectViewModel(),
+    onStartProject: (() -> Void)? = nil
+  ) {
     _viewModel = State(initialValue: viewModel)
+    self.onStartProject = onStartProject
   }
 
   public var body: some View {
@@ -31,8 +37,14 @@ public struct HomePage: View {
               .padding(.horizontal, 32)
           }
 
-          StartProjectButton()
-            .padding(.top, 4)
+          StartProjectButton(action: {
+            if let onStartProject {
+              onStartProject()
+            } else {
+              navigateToBoundaryCreation = true
+            }
+          })
+          .padding(.top, 4)
 
           Spacer()
         }
@@ -48,6 +60,9 @@ public struct HomePage: View {
         )
       }
       .ignoresSafeArea()
+      .navigationDestination(isPresented: $navigateToBoundaryCreation) {
+        BoundaryCreationView()
+      }
     }
   }
 
