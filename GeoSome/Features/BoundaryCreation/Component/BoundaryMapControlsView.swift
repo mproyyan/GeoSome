@@ -16,44 +16,53 @@ struct BoundaryMapControlsView: View {
   }
 
   var body: some View {
-    VStack(spacing: 10) {
-      // Map Layer Toggle Button
+    VStack(spacing: 0) {
+      // Top: Map Layer Toggle Button
       Button(action: {
         onToggleMapLayer?()
       }) {
         Image(systemName: isSatelliteStyle ? "map.fill" : "map")
-          .font(.system(size: 20, weight: .medium))
-          .foregroundStyle(Color.primary)
+          .font(.body.weight(.medium))
+          .imageScale(.large)
+          .foregroundStyle(.primary)
           .frame(width: 46, height: 46)
-          .background(.regularMaterial)
-          .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-          .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-              .stroke(Color.white.opacity(0.8), lineWidth: 1)
-          )
-          .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 3)
+          .contentShape(Rectangle())
       }
-      .buttonStyle(BoundaryPillButtonStyle())
+      .buttonStyle(.plain)
       .accessibilityLabel("Change map layer")
+      .accessibilityValue(isSatelliteStyle ? "Satellite" : "Standard")
+      .accessibilityHint("Switches between standard and satellite map views")
 
-      // Current Location Focus Button
+      Divider()
+        .frame(width: 46)
+
+      // Bottom: Current Location Focus Button
       Button(action: {
         onFocusLocation?()
       }) {
         Image(systemName: "location")
-          .font(.system(size: 20, weight: .medium))
-          .foregroundStyle(Color.blue)
+          .font(.body.weight(.medium))
+          .imageScale(.large)
+          .foregroundStyle(.blue)
           .frame(width: 46, height: 46)
-          .background(.regularMaterial)
-          .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-          .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-              .stroke(Color.white.opacity(0.8), lineWidth: 1)
-          )
-          .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 3)
+          .contentShape(Rectangle())
       }
-      .buttonStyle(BoundaryPillButtonStyle())
+      .buttonStyle(.plain)
       .accessibilityLabel("Focus on current location")
+      .accessibilityHint("Centers the map on the default anchor location")
     }
+    .frame(width: 46)
+    .glassEffect(
+      .regular.interactive(),
+      in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+    )
+    .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 3)
+  }
+}
+
+#Preview {
+  ZStack {
+    Color.gray.opacity(0.3).ignoresSafeArea()
+    BoundaryMapControlsView()
   }
 }

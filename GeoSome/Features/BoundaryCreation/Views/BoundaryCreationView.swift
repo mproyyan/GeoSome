@@ -12,18 +12,60 @@ struct BoundaryCreationView: View {
   var body: some View {
     @Bindable var viewModel = viewModel
 
-    ZStack {
-      // Content Layer (MapKit)
-      BoundaryMapContentLayer(
-        cameraPosition: $viewModel.cameraPosition,
+    BoundaryMapContentLayer(
+      cameraPosition: $viewModel.cameraPosition,
+      isSatelliteStyle: viewModel.isSatelliteStyle,
+      onMapTap: { coordinate in
+        viewModel.handleMapTap(at: coordinate)
+      }
+    )
+    .overlay(alignment: .bottomTrailing) {
+      BoundaryMapControlsView(
         isSatelliteStyle: viewModel.isSatelliteStyle,
-        onMapTap: { coordinate in
-          viewModel.handleMapTap(at: coordinate)
+        onToggleMapLayer: {
+          withAnimation(.easeInOut(duration: 0.2)) {
+            viewModel.toggleMapLayer()
+          }
+        },
+        onFocusLocation: {
+          withAnimation(.easeInOut(duration: 0.5)) {
+            viewModel.focusLocation()
+          }
         }
       )
-
-      // Bottom Overlay (Tooltip, Coordinate Sheet, Map Controls)
-      bottomOverlay(viewModel: $viewModel)
+      .padding(.trailing, 20)
+      .padding(.bottom, 28)
+    }
+    .sheet(isPresented: $viewModel.isCoordinateSheetPresented) {
+      BoundaryCoordinateSheetView(
+        isTooltipVisible: $viewModel.isTooltipVisible,
+        onHelpTap: {
+          viewModel.toggleTooltip()
+        },
+        onAddCoordinateTap: {
+          viewModel.addCoordinate()
+        }
+      )
+      .presentationPlacement(.leading)
+      .presentationDetents(
+        [
+          BoundaryCreationViewModel.collapsedSheetDetent,
+          BoundaryCreationViewModel.defaultSheetDetent,
+          .medium,
+          .large
+        ],
+        selection: $viewModel.selectedSheetDetent
+      )
+      .presentationDragIndicator(.visible)
+      .presentationBackgroundInteraction(.enabled)
+      .presentationContentInteraction(.scrolls)
+      .interactiveDismissDisabled()
+    }
+    .onAppear {
+      viewModel.isCoordinateSheetPresented = true
+    }
+    .onDisappear {
+      viewModel.isCoordinateSheetPresented = false
     }
     .toolbar {
       BoundaryToolbarContent(
@@ -51,58 +93,6 @@ struct BoundaryCreationView: View {
     .toolbarBackground(.visible, for: .navigationBar)
     .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
     .ignoresSafeArea(.keyboard)
-  }
-
-  private func bottomOverlay(viewModel: Bindable<BoundaryCreationViewModel>) -> some View {
-    VStack {
-      Spacer()
-
-      HStack(alignment: .bottom) {
-        // Bottom-left: Tooltip + Coordinate Sheet
-        VStack(alignment: .leading, spacing: 8) {
-          BoundaryTooltipView(
-            isVisible: viewModel.isTooltipVisible,
-            message: "Tap the map to add a boundary point.",
-            onDismiss: {
-              self.viewModel.dismissTooltip()
-            }
-          )
-          .padding(.leading, 180)
-
-          BoundaryCoordinateSheetView(
-            onHelpTap: {
-              withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                self.viewModel.toggleTooltip()
-              }
-            },
-            onAddCoordinateTap: {
-              self.viewModel.addCoordinate()
-            }
-          )
-        }
-        .padding(.leading, 24)
-        .padding(.bottom, 20)
-
-        Spacer()
-
-        // Bottom-right: Map Controls
-        BoundaryMapControlsView(
-          isSatelliteStyle: self.viewModel.isSatelliteStyle,
-          onToggleMapLayer: {
-            withAnimation(.easeInOut(duration: 0.2)) {
-              self.viewModel.toggleMapLayer()
-            }
-          },
-          onFocusLocation: {
-            withAnimation(.easeInOut(duration: 0.5)) {
-              self.viewModel.focusLocation()
-            }
-          }
-        )
-        .padding(.trailing, 24)
-        .padding(.bottom, 28)
-      }
-    }
   }
 }
 

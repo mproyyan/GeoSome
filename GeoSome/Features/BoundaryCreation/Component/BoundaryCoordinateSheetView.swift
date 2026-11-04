@@ -1,110 +1,144 @@
 import SwiftUI
 
 struct BoundaryCoordinateSheetView: View {
+  @Binding var isTooltipVisible: Bool
   var onHelpTap: (() -> Void)?
   var onAddCoordinateTap: (() -> Void)?
 
   init(
+    isTooltipVisible: Binding<Bool> = .constant(false),
     onHelpTap: (() -> Void)? = nil,
     onAddCoordinateTap: (() -> Void)? = nil
   ) {
+    _isTooltipVisible = isTooltipVisible
     self.onHelpTap = onHelpTap
     self.onAddCoordinateTap = onAddCoordinateTap
   }
 
   var body: some View {
-    VStack(spacing: 16) {
-      // Drag handle
-      Capsule()
-        .fill(Color.secondary.opacity(0.35))
-        .frame(width: 36, height: 5)
-        .padding(.top, 4)
-
-      // Header row
+    VStack(spacing: 12) {
+      // Pinned Header Row (remains visible when sheet is collapsed at bottom)
       HStack {
         Text("Boundary Coordinate")
-          .font(.system(size: 18, weight: .bold))
-          .foregroundStyle(Color.primary)
+          .font(.headline)
+          .foregroundStyle(.primary)
 
         Spacer()
 
         Button(action: {
-          onHelpTap?()
+          if let onHelpTap {
+            onHelpTap()
+          } else {
+            isTooltipVisible.toggle()
+          }
         }) {
           Image(systemName: "questionmark.circle")
-            .font(.system(size: 20))
-            .foregroundStyle(Color.primary)
+            .font(.title3)
+            .foregroundStyle(.secondary)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Help on boundary coordinates")
-      }
-      .padding(.horizontal, 4)
-
-      // Empty State Inner Container
-      VStack(spacing: 6) {
-        Text("Add boundary points")
-          .font(.system(size: 15, weight: .semibold))
-          .foregroundStyle(Color.primary.opacity(0.85))
-
-        Text("Tap the map or Add Coordinate to place points.\nYou need at least 3 to create a boundary.")
-          .font(.system(size: 13, weight: .regular))
-          .foregroundStyle(Color.secondary)
-          .multilineTextAlignment(.center)
-          .lineSpacing(3)
-      }
-      .frame(maxWidth: .infinity)
-      .padding(.vertical, 20)
-      .padding(.horizontal, 16)
-      .background(
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .fill(Color.white.opacity(0.55))
-      )
-      .overlay(
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-          .stroke(Color.white.opacity(0.8), lineWidth: 1)
-      )
-
-      // Add Coordinate Button
-      Button(action: {
-        onAddCoordinateTap?()
-      }) {
-        HStack(spacing: 6) {
-          Image(systemName: "plus")
-            .font(.system(size: 15, weight: .semibold))
-
-          Text("Add Coordinate")
-            .font(.system(size: 15, weight: .semibold))
+        .accessibilityHint("Shows instructions for adding boundary points")
+        .popover(isPresented: $isTooltipVisible, arrowEdge: .bottom) {
+          BoundaryTooltipView()
         }
-        .foregroundStyle(Color.blue)
-        .frame(maxWidth: .infinity)
-        .frame(height: 46)
-        .background(
-          LinearGradient(
-            colors: [
-              Color.blue.opacity(0.08),
-              Color.blue.opacity(0.14)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-          )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-          RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-        )
       }
-      .buttonStyle(BoundaryPillButtonStyle())
-      .accessibilityLabel("Add Coordinate")
+      .padding(.horizontal, 20)
+      .padding(.top, 16)
+
+      // Collapsible Content Area
+      ScrollView(.vertical, showsIndicators: false) {
+        VStack(spacing: 16) {
+          // Empty State Container
+          VStack(spacing: 6) {
+            Text("Add boundary points")
+              .font(.subheadline.weight(.semibold))
+              .foregroundStyle(.primary)
+
+            Text("Tap the map or Add Coordinate to place points.\nYou need at least 3 to create a boundary.")
+              .font(.footnote)
+              .foregroundStyle(.secondary)
+              .multilineTextAlignment(.center)
+          }
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 20)
+          .padding(.horizontal, 16)
+          .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+              .fill(.quaternary)
+          )
+          .accessibilityElement(children: .combine)
+          .accessibilityLabel("Add boundary points. Tap the map or Add Coordinate to place points. You need at least 3 to create a boundary.")
+
+          // Native Action Button
+          Button(action: {
+            onAddCoordinateTap?()
+          }) {
+            Label("Add Coordinate", systemImage: "plus")
+              .font(.body.weight(.semibold))
+              .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.bordered)
+          .buttonBorderShape(.roundedRectangle(radius: 14))
+          .controlSize(.large)
+          .tint(.blue)
+          .frame(minHeight: 44)
+          .accessibilityLabel("Add Coordinate")
+          .accessibilityHint("Adds a new boundary coordinate point")
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 16)
+      }
     }
-    .padding(20)
-    .frame(width: 350)
-    .background(.regularMaterial)
-    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-    .overlay(
-      RoundedRectangle(cornerRadius: 24, style: .continuous)
-        .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
-    )
-    .shadow(color: Color.black.opacity(0.12), radius: 18, x: 0, y: 8)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
   }
+}
+
+#Preview("Light Mode") {
+  @Previewable @State var selectedDetent: PresentationDetent = BoundaryCreationViewModel.defaultSheetDetent
+
+  Text("Map Content")
+    .sheet(isPresented: .constant(true)) {
+      BoundaryCoordinateSheetView()
+        .presentationPlacement(.leading)
+        .presentationDetents(
+          [
+            BoundaryCreationViewModel.collapsedSheetDetent,
+            BoundaryCreationViewModel.defaultSheetDetent,
+            .medium,
+            .large
+          ],
+          selection: $selectedDetent
+        )
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled)
+        .presentationContentInteraction(.scrolls)
+        .interactiveDismissDisabled()
+    }
+}
+
+#Preview("Dark Mode") {
+  @Previewable @State var selectedDetent: PresentationDetent = BoundaryCreationViewModel.defaultSheetDetent
+
+  Text("Map Content")
+    .preferredColorScheme(.dark)
+    .sheet(isPresented: .constant(true)) {
+      BoundaryCoordinateSheetView()
+        .presentationPlacement(.leading)
+        .presentationDetents(
+          [
+            BoundaryCreationViewModel.collapsedSheetDetent,
+            BoundaryCreationViewModel.defaultSheetDetent,
+            .medium,
+            .large
+          ],
+          selection: $selectedDetent
+        )
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled)
+        .presentationContentInteraction(.scrolls)
+        .interactiveDismissDisabled()
+    }
 }
