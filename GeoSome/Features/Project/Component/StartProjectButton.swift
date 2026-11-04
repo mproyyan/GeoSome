@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct StartProjectButton: View {
   private let action: (() -> Void)?
+  @State private var feedbackTrigger: Bool = false
 
   public init(action: (() -> Void)? = nil) {
     self.action = action
@@ -9,9 +10,7 @@ public struct StartProjectButton: View {
 
   public var body: some View {
     Button(action: {
-      #if os(iOS)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-      #endif
+      feedbackTrigger.toggle()
       action?()
     }) {
       HStack(spacing: 8) {
@@ -28,6 +27,7 @@ public struct StartProjectButton: View {
       .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
     }
     .buttonStyle(PressableButtonStyle())
+    .sensoryFeedback(.impact(weight: .medium), trigger: feedbackTrigger)
     .accessibilityLabel("Start Your Project")
     .accessibilityHint("Creates a new site investigation project")
   }

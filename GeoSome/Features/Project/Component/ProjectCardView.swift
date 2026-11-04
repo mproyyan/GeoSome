@@ -1,7 +1,4 @@
 import SwiftUI
-#if canImport(UIKit)
-  import UIKit
-#endif
 
 public struct ProjectCardView: View {
   public let project: Project
@@ -24,17 +21,13 @@ public struct ProjectCardView: View {
         detailsView
       }
       .frame(width: 156, height: 144)
-      #if canImport(UIKit)
-        .background(Color(uiColor: .secondarySystemBackground))
-      #else
-        .background(Color.gray.opacity(0.12))
-      #endif
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-          RoundedRectangle(cornerRadius: 14, style: .continuous)
-            .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+      .background(.quaternary)
+      .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+      .overlay(
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+          .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+      )
+      .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
     }
     .buttonStyle(CardButtonStyle())
     .accessibilityElement(children: .combine)
@@ -44,13 +37,8 @@ public struct ProjectCardView: View {
 
   private var thumbnailView: some View {
     ZStack {
-      #if canImport(UIKit)
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-          .fill(Color(uiColor: .tertiarySystemFill))
-      #else
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-          .fill(Color.gray.opacity(0.2))
-      #endif
+      RoundedRectangle(cornerRadius: 12, style: .continuous)
+        .fill(.tertiary)
 
       Image(systemName: "map")
         .font(.system(size: 24, weight: .light))

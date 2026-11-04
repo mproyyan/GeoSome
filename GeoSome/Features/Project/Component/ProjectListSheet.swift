@@ -1,7 +1,4 @@
 import SwiftUI
-#if canImport(UIKit)
-  import UIKit
-#endif
 
 public struct ProjectListSheet: View {
   public let projects: [Project]
@@ -97,20 +94,16 @@ public struct ProjectListSheet: View {
         }
       }
       .frame(width: geometry.size.width, height: clampedHeight, alignment: .top)
-      #if canImport(UIKit)
-        .background(Color(uiColor: .systemBackground))
-      #else
-        .background(Color.white)
-      #endif
-        .clipShape(
-          UnevenRoundedRectangle(
-            topLeadingRadius: 28,
-            bottomLeadingRadius: 0,
-            bottomTrailingRadius: 0,
-            topTrailingRadius: 28,
-            style: .continuous
-          )
+      .background(.background)
+      .clipShape(
+        UnevenRoundedRectangle(
+          topLeadingRadius: 28,
+          bottomLeadingRadius: 0,
+          bottomTrailingRadius: 0,
+          topTrailingRadius: 28,
+          style: .continuous
         )
+      )
         .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: -4)
         .frame(maxHeight: .infinity, alignment: .bottom)
     }
