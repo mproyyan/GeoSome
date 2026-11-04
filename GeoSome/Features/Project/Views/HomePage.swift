@@ -60,6 +60,7 @@ public struct HomePage: View {
         )
       }
       .ignoresSafeArea()
+      .toolbar(.hidden, for: .navigationBar)
       .navigationDestination(isPresented: $navigateToBoundaryCreation) {
         BoundaryCreationView()
       }

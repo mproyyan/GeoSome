@@ -17,11 +17,7 @@ public struct BoundaryCreationView: View {
   @State private var canRedo: Bool = false
   @State private var canCreateProject: Bool = false
 
-  public var onBack: (() -> Void)?
-
-  public init(onBack: (() -> Void)? = nil) {
-    self.onBack = onBack
-  }
+  public init() {}
 
   public var body: some View {
     ZStack {
@@ -34,40 +30,10 @@ public struct BoundaryCreationView: View {
         }
       )
 
-      // UI Layer (Top bar, bottom sheet, tooltip, map controls)
+      // UI Layer (Bottom Sheet, Tooltip, Map Controls)
       BoundaryUILayer(
-        projectName: $projectName,
         isTooltipVisible: $isTooltipVisible,
         isSatelliteStyle: isSatelliteStyle,
-        canUndo: canUndo,
-        canRedo: canRedo,
-        canCreateProject: canCreateProject,
-        onBackTap: {
-          if let onBack {
-            onBack()
-          } else {
-            dismiss()
-          }
-        },
-        onResetAnchorTap: {
-          withAnimation(.easeInOut(duration: 0.5)) {
-            cameraPosition = .region(
-              MKCoordinateRegion(
-                center: BoundaryMapContentLayer.defaultCenter,
-                span: BoundaryMapContentLayer.defaultSpan
-              )
-            )
-          }
-        },
-        onUndoTap: {
-          // Undo action placeholder
-        },
-        onRedoTap: {
-          // Redo action placeholder
-        },
-        onCreateProjectTap: {
-          // Create project action placeholder
-        },
         onHelpTap: {
           withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             isTooltipVisible.toggle()
@@ -93,12 +59,42 @@ public struct BoundaryCreationView: View {
         }
       )
     }
-    .navigationBarBackButtonHidden(true)
-    .toolbar(.hidden, for: .navigationBar)
+    .toolbar {
+      BoundaryToolbarContent(
+        projectName: $projectName,
+        canUndo: canUndo,
+        canRedo: canRedo,
+        canCreateProject: canCreateProject,
+        onResetAnchorTap: {
+          withAnimation(.easeInOut(duration: 0.5)) {
+            cameraPosition = .region(
+              MKCoordinateRegion(
+                center: BoundaryMapContentLayer.defaultCenter,
+                span: BoundaryMapContentLayer.defaultSpan
+              )
+            )
+          }
+        },
+        onUndoTap: {
+          // Undo action placeholder
+        },
+        onRedoTap: {
+          // Redo action placeholder
+        },
+        onCreateProjectTap: {
+          // Create project action placeholder
+        }
+      )
+    }
+    .toolbarRole(.editor)
+    .toolbarBackground(.visible, for: .navigationBar)
+    .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
     .ignoresSafeArea(.keyboard)
   }
 }
 
 #Preview {
-  BoundaryCreationView()
+  NavigationStack {
+    BoundaryCreationView()
+  }
 }
