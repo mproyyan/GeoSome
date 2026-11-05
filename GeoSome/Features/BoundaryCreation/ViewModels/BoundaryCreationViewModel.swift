@@ -170,8 +170,13 @@ final class BoundaryCreationViewModel {
     }
 
     recordUndoSnapshot()
-    points.append(BoundaryPoint(coordinate: coordinate))
+    let newPoint = BoundaryPoint(coordinate: coordinate)
+    points.append(newPoint)
     syncSheetDetentForPointCount()
+    AccessibilityCaptionCenter.shared.announce(
+      "Added CPT Point \(points.count) at \(newPoint.formattedCoordinate). \(canCreateProject ? "Boundary ready." : "Need \(3 - points.count) more to complete boundary.")",
+      soundDescription: "Map tap"
+    )
   }
 
   func beginPointDrag() {
@@ -258,6 +263,9 @@ final class BoundaryCreationViewModel {
         recordUndoSnapshot()
         points[index].latitude = updatedCoordinate.latitude
         points[index].longitude = updatedCoordinate.longitude
+        AccessibilityCaptionCenter.shared.announce(
+          "Updated CPT Point \(index + 1) to \(points[index].formattedCoordinate)."
+        )
       }
     }
 
@@ -269,12 +277,33 @@ final class BoundaryCreationViewModel {
   }
 
   func confirmDeleteEditingPoint() {
-    if let editingPoint, points.contains(where: { $0.id == editingPoint.id }) {
+    var deletedTitle = "CPT Point"
+    if let editingPoint, let index = points.firstIndex(where: { $0.id == editingPoint.id }) {
+      deletedTitle = "CPT Point \(index + 1)"
       recordUndoSnapshot()
-      points.removeAll { $0.id == editingPoint.id }
+      points.remove(at: index)
     }
     syncSheetDetentForPointCount()
     dismissEditCoordinateSheet()
+    AccessibilityCaptionCenter.shared.announce(
+      "Deleted \(deletedTitle). \(boundaryPointsSummaryText) remaining.",
+      soundDescription: "Point deleted"
+    )
+  }
+
+  func deletePoint(id: BoundaryPoint.ID) {
+    guard let index = points.firstIndex(where: { $0.id == id }) else { return }
+    let deletedTitle = "CPT Point \(index + 1)"
+    recordUndoSnapshot()
+    points.remove(at: index)
+    if editingPoint?.id == id {
+      dismissEditCoordinateSheet()
+    }
+    syncSheetDetentForPointCount()
+    AccessibilityCaptionCenter.shared.announce(
+      "Deleted \(deletedTitle). \(boundaryPointsSummaryText) remaining.",
+      soundDescription: "Point deleted"
+    )
   }
 
   func requestDismissAddCoordinateSheet() {
@@ -307,6 +336,9 @@ final class BoundaryCreationViewModel {
     syncSheetDetentForPointCount()
     focusOnCoordinates(points.map(\.coordinate))
     dismissAddCoordinateSheet()
+    AccessibilityCaptionCenter.shared.announce(
+      "Added \(parsedPoints.count) \(parsedPoints.count == 1 ? "coordinate" : "coordinates"). Total \(boundaryPointsSummaryText)."
+    )
   }
 
   private func focusOnCoordinates(_ coordinates: [CLLocationCoordinate2D]) {
@@ -418,10 +450,14 @@ final class BoundaryCreationViewModel {
 
   func toggleMapLayer() {
     isSatelliteStyle.toggle()
+    AccessibilityCaptionCenter.shared.announce(
+      "Map style changed to \(isSatelliteStyle ? "Satellite" : "Standard")."
+    )
   }
 
   func focusLocation() {
     cameraPosition = .region(BoundaryMapConfiguration.defaultRegion)
+    AccessibilityCaptionCenter.shared.announce("Map centered on default anchor location.")
   }
 
   func beginEditingProjectName() {
@@ -477,6 +513,7 @@ final class BoundaryCreationViewModel {
       dismissEditCoordinateSheet()
     }
     syncSheetDetentForPointCount()
+    AccessibilityCaptionCenter.shared.announce("All boundary points cleared.")
   }
 
   func undo() {
@@ -494,6 +531,9 @@ final class BoundaryCreationViewModel {
       dismissEditCoordinateSheet()
     }
     syncSheetDetentForPointCount()
+    AccessibilityCaptionCenter.shared.announce(
+      "Undid last change. \(boundaryPointsSummaryText)."
+    )
   }
 
   func redo() {
@@ -511,6 +551,9 @@ final class BoundaryCreationViewModel {
       dismissEditCoordinateSheet()
     }
     syncSheetDetentForPointCount()
+    AccessibilityCaptionCenter.shared.announce(
+      "Redid change. \(boundaryPointsSummaryText)."
+    )
   }
 
   private func recordUndoSnapshot() {

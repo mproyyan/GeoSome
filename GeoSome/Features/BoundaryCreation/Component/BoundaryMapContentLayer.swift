@@ -8,6 +8,13 @@ struct BoundaryMapContentLayer: View {
   var onMapTap: ((CLLocationCoordinate2D) -> Void)?
   var onBeginMovePoint: (() -> Void)?
   var onMovePoint: ((BoundaryPoint.ID, CLLocationCoordinate2D) -> Void)?
+  var onSelectPoint: ((BoundaryPoint) -> Void)?
+  var onDeletePoint: ((BoundaryPoint.ID) -> Void)?
+
+  @Environment(\.colorSchemeContrast) private var contrast
+  @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @ScaledMetric(relativeTo: .caption) private var badgeSize: CGFloat = 28
 
   @State private var draggingPointID: BoundaryPoint.ID?
   @State private var dragStartCoordinate: CLLocationCoordinate2D?
@@ -20,7 +27,9 @@ struct BoundaryMapContentLayer: View {
     isSatelliteStyle: Bool = false,
     onMapTap: ((CLLocationCoordinate2D) -> Void)? = nil,
     onBeginMovePoint: (() -> Void)? = nil,
-    onMovePoint: ((BoundaryPoint.ID, CLLocationCoordinate2D) -> Void)? = nil
+    onMovePoint: ((BoundaryPoint.ID, CLLocationCoordinate2D) -> Void)? = nil,
+    onSelectPoint: ((BoundaryPoint) -> Void)? = nil,
+    onDeletePoint: ((BoundaryPoint.ID) -> Void)? = nil
   ) {
     _cameraPosition = cameraPosition
     self.points = points
@@ -28,10 +37,16 @@ struct BoundaryMapContentLayer: View {
     self.onMapTap = onMapTap
     self.onBeginMovePoint = onBeginMovePoint
     self.onMovePoint = onMovePoint
+    self.onSelectPoint = onSelectPoint
+    self.onDeletePoint = onDeletePoint
   }
 
   private var coordinates: [CLLocationCoordinate2D] {
     points.map(\.coordinate)
+  }
+
+  private var resolvedBadgeSize: CGFloat {
+    max(badgeSize, 28)
   }
 
   var body: some View {
@@ -44,11 +59,19 @@ struct BoundaryMapContentLayer: View {
 
         if coordinates.count == 2 {
           MapPolyline(coordinates: coordinates)
-            .stroke(.blue, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+            .stroke(
+              .blue,
+              style: StrokeStyle(
+                lineWidth: contrast == .increased ? 4 : 3,
+                lineCap: .round,
+                lineJoin: .round,
+                dash: [8, 6]
+              )
+            )
         } else if coordinates.count >= 3 {
           MapPolygon(coordinates: coordinates)
-            .foregroundStyle(.blue.opacity(0.22))
-            .stroke(.blue, lineWidth: 3)
+            .foregroundStyle(.blue.opacity(contrast == .increased ? 0.34 : 0.22))
+            .stroke(.blue, lineWidth: contrast == .increased ? 4 : 3)
         }
 
         ForEach(Array(points.enumerated()), id: \.element.id) { index, point in
@@ -77,6 +100,7 @@ struct BoundaryMapContentLayer: View {
           ) {
             pointBadgeLabel(index: draggedIndex, isDragging: true)
               .allowsHitTesting(false)
+              .accessibilityHidden(true)
           }
           .annotationTitles(.hidden)
         }
@@ -99,6 +123,9 @@ struct BoundaryMapContentLayer: View {
         if let coordinate = proxy.convert(screenPoint, from: .local) {
           onMapTap?(coordinate)
         }
+      }
+      .accessibilityAction(named: "Add Boundary Point at Default Anchor") {
+        onMapTap?(BoundaryMapConfiguration.defaultCenter)
       }
       .ignoresSafeArea()
     }
@@ -123,15 +150,37 @@ struct BoundaryMapContentLayer: View {
   }
 
   private func pointBadgeLabel(index: Int, isDragging: Bool) -> some View {
-    Text("\(index + 1)")
+    let isFirstAnchor = index == 0 && differentiateWithoutColor
+    return Text("\(index + 1)")
       .font(.caption.weight(.bold))
       .foregroundStyle(.white)
-      .frame(width: 28, height: 28)
-      .background(.blue, in: .circle)
-      .scaleEffect(isDragging ? 1.2 : 1.0)
+      .padding(4)
+      .frame(minWidth: resolvedBadgeSize, minHeight: resolvedBadgeSize)
+      .background(
+        .blue,
+        in: isFirstAnchor
+          ? AnyShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+          : AnyShape(Circle())
+      )
+      .overlay {
+        if isFirstAnchor {
+          RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .stroke(.white, lineWidth: contrast == .increased ? 3 : 2)
+        } else {
+          Circle()
+            .stroke(
+              .white,
+              style: StrokeStyle(
+                lineWidth: contrast == .increased ? 3 : 2,
+                dash: isDragging ? [4, 2] : []
+              )
+            )
+        }
+      }
+      .scaleEffect(isDragging && !reduceMotion ? 1.2 : 1.0)
       .shadow(
-        color: .black.opacity(isDragging ? 0.25 : 0.12),
-        radius: isDragging ? 6 : 2,
+        color: .black.opacity(isDragging ? 0.3 : 0.2),
+        radius: isDragging ? 6 : 3,
         y: 2
       )
   }
@@ -144,7 +193,7 @@ struct BoundaryMapContentLayer: View {
   ) -> some View {
     pointBadgeLabel(index: index, isDragging: false)
       .opacity(isDragging ? 0 : 1)
-      .frame(width: 44, height: 44)
+      .frame(minWidth: max(resolvedBadgeSize, 44), minHeight: max(resolvedBadgeSize, 44))
       .contentShape(Circle())
       .highPriorityGesture(
         DragGesture(minimumDistance: 0)
@@ -198,6 +247,9 @@ struct BoundaryMapContentLayer: View {
               )
               if let finalCoordinate = proxy.convert(targetScreenPoint, from: .local) {
                 onMovePoint?(point.id, finalCoordinate)
+                AccessibilityCaptionCenter.shared.announce(
+                  "Moved CPT Point \(index + 1) to \(BoundaryPoint(coordinate: finalCoordinate).formattedCoordinate)."
+                )
               }
             }
 
@@ -206,8 +258,16 @@ struct BoundaryMapContentLayer: View {
             didRecordDragStart = false
           }
       )
-      .accessibilityLabel("Boundary point \(index + 1)")
-      .accessibilityHint("Drag to move this boundary point on the map")
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel("CPT Point \(index + 1)")
+      .accessibilityValue("Latitude \(point.formattedLatitude), Longitude \(point.formattedLongitude)")
+      .accessibilityHint("Double-tap and hold to drag on the map, or use actions to edit or delete")
+      .accessibilityAction(named: "Edit Coordinate") {
+        onSelectPoint?(point)
+      }
+      .accessibilityAction(named: "Delete Point") {
+        onDeletePoint?(point.id)
+      }
   }
 }
 

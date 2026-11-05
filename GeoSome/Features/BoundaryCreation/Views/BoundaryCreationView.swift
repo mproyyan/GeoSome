@@ -21,7 +21,9 @@ struct BoundaryCreationView: View {
 
   @Environment(AppRouter.self) private var router
   @Environment(ProjectViewModel.self) private var projectViewModel: ProjectViewModel?
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var viewModel: BoundaryCreationViewModel
+  @State private var captionCenter = AccessibilityCaptionCenter.shared
 
   init(viewModel: BoundaryCreationViewModel? = nil) {
     _viewModel = State(initialValue: viewModel ?? BoundaryCreationViewModel())
@@ -104,18 +106,35 @@ struct BoundaryCreationView: View {
       },
       onMovePoint: { id, newCoordinate in
         viewModel.updatePointCoordinate(id: id, to: newCoordinate)
+      },
+      onSelectPoint: { point in
+        viewModel.selectPointForEditing(point)
+      },
+      onDeletePoint: { id in
+        viewModel.deletePoint(id: id)
       }
     )
+    .overlay(alignment: .top) {
+      if let caption = captionCenter.currentCaption {
+        AccessibilityCaptionBannerView(
+          caption: caption,
+          onDismiss: { captionCenter.dismissCaption() }
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
+      }
+    }
     .overlay(alignment: .bottomTrailing) {
       BoundaryMapControlsView(
         isSatelliteStyle: viewModel.isSatelliteStyle,
         onToggleMapLayer: {
-          withAnimation(.easeInOut(duration: 0.2)) {
+          withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
             viewModel.toggleMapLayer()
           }
         },
         onFocusLocation: {
-          withAnimation(.easeInOut(duration: 0.5)) {
+          withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) {
             viewModel.focusLocation()
           }
         }
@@ -140,6 +159,9 @@ struct BoundaryCreationView: View {
           },
           onSelectPoint: { point in
             viewModel.selectPointForEditing(point)
+          },
+          onDeletePoint: { id in
+            viewModel.deletePoint(id: id)
           }
         )
         .presentationPlacement(.leading)
@@ -246,7 +268,7 @@ struct BoundaryCreationView: View {
           viewModel.finishEditingProjectName()
         },
         onResetAnchorTap: {
-          withAnimation(.easeInOut(duration: 0.5)) {
+          withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) {
             viewModel.resetAnchor()
           }
         },
@@ -259,6 +281,9 @@ struct BoundaryCreationView: View {
         onCreateProjectTap: {
           guard let newProject = viewModel.createProject() else { return }
           projectViewModel?.addProject(newProject)
+          AccessibilityCaptionCenter.shared.announce(
+            "Created project \(newProject.name) with \(newProject.boundaryPoints.count) boundary points."
+          )
           viewModel.dismissCoordinateSheet()
           router.popToRoot()
         }

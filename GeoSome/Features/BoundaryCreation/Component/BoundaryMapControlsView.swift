@@ -5,6 +5,11 @@ struct BoundaryMapControlsView: View {
   var onToggleMapLayer: (() -> Void)?
   var onFocusLocation: (() -> Void)?
 
+  @Environment(\.colorSchemeContrast) private var contrast
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+  @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+  @ScaledMetric(relativeTo: .body) private var controlDimension: CGFloat = 46
+
   init(
     isSatelliteStyle: Bool = false,
     onToggleMapLayer: (() -> Void)? = nil,
@@ -15,46 +20,74 @@ struct BoundaryMapControlsView: View {
     self.onFocusLocation = onFocusLocation
   }
 
+  private var resolvedDimension: CGFloat {
+    max(controlDimension, 44)
+  }
+
   var body: some View {
     VStack(spacing: 0) {
       // Top: Map Layer Toggle Button
       Button(action: {
         onToggleMapLayer?()
       }) {
-        Image(systemName: isSatelliteStyle ? "map.fill" : "map")
-          .font(.body.weight(.medium))
-          .imageScale(.large)
-          .foregroundStyle(.primary)
-          .frame(width: 46, height: 46)
-          .contentShape(Rectangle())
+        VStack(spacing: 2) {
+          Image(systemName: isSatelliteStyle ? "globe.americas.fill" : "map")
+            .font(.body.weight(.medium))
+            .imageScale(.large)
+            .foregroundStyle(.primary)
+
+          if differentiateWithoutColor {
+            Text(isSatelliteStyle ? "SAT" : "MAP")
+              .font(.caption2.weight(.bold))
+              .foregroundStyle(.primary)
+          }
+        }
+        .frame(minWidth: resolvedDimension, minHeight: resolvedDimension)
+        .padding(.vertical, differentiateWithoutColor ? 4 : 0)
+        .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Change map layer")
       .accessibilityValue(isSatelliteStyle ? "Satellite" : "Standard")
       .accessibilityHint("Switches between standard and satellite map views")
+      .accessibilityInputLabels(["Map Layer", "Toggle Map Layer", "Satellite", "Map Style"])
 
       Divider()
-        .frame(width: 46)
+        .frame(width: resolvedDimension)
 
       // Bottom: Current Location Focus Button
       Button(action: {
         onFocusLocation?()
       }) {
-        Image(systemName: "location")
+        Image(systemName: differentiateWithoutColor ? "location.fill" : "location")
           .font(.body.weight(.medium))
           .imageScale(.large)
-          .foregroundStyle(.blue)
-          .frame(width: 46, height: 46)
+          .foregroundStyle(contrast == .increased ? Color.primary : Color.blue)
+          .frame(minWidth: resolvedDimension, minHeight: resolvedDimension)
           .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
       .accessibilityLabel("Focus on current location")
       .accessibilityHint("Centers the map on the default anchor location")
+      .accessibilityInputLabels(["Focus Location", "Current Location", "Center Map"])
     }
-    .frame(width: 46)
+    .frame(width: resolvedDimension)
+    .background {
+      if reduceTransparency || contrast == .increased {
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+          .fill(Color(.secondarySystemBackground))
+      }
+    }
     .glassEffect(
       .regular.interactive(),
       in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 12, style: .continuous)
+        .stroke(
+          Color.primary.opacity(contrast == .increased ? 0.45 : 0.12),
+          lineWidth: contrast == .increased ? 1.5 : 1
+        )
     )
     .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 3)
   }

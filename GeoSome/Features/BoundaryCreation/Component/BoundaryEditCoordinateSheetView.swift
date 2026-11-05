@@ -21,6 +21,8 @@ struct BoundaryEditCoordinateSheetView: View {
   var onDeleteConfirm: (() -> Void)?
 
   @FocusState private var focusedField: Field?
+  @Environment(\.colorSchemeContrast) private var contrast
+  @ScaledMetric(relativeTo: .body) private var fieldMinHeight: CGFloat = 46
 
   init(
     pointTitle: String = "CPT Point 1",
@@ -59,89 +61,112 @@ struct BoundaryEditCoordinateSheetView: View {
 
   var body: some View {
     NavigationStack {
-      VStack(alignment: .leading, spacing: 14) {
-        VStack(alignment: .leading, spacing: 10) {
-          Text(pointTitle)
-            .font(.headline)
-            .foregroundStyle(.primary)
+      ScrollView(.vertical, showsIndicators: false) {
+        VStack(alignment: .leading, spacing: 14) {
+          VStack(alignment: .leading, spacing: 10) {
+            Text(pointTitle)
+              .font(.headline)
+              .foregroundStyle(.primary)
+              .accessibilityAddTraits(.isHeader)
 
-          Divider()
-        }
-
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Latitude")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
-
-          TextField("-6.216543", text: $latitudeText)
-            .font(.body)
-            .foregroundStyle(.primary)
-            .keyboardType(.numbersAndPunctuation)
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-            .focused($focusedField, equals: .latitude)
-            .padding(.horizontal, 16)
-            .frame(height: 46)
-            .background(
-              Capsule(style: .continuous)
-                .fill(.background)
-            )
-            .contentShape(Capsule(style: .continuous))
-            .onTapGesture {
-              focusedField = .latitude
-            }
-            .accessibilityLabel("Latitude")
-        }
-
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Longitude")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
-
-          TextField("106.849876", text: $longitudeText)
-            .font(.body)
-            .foregroundStyle(.primary)
-            .keyboardType(.numbersAndPunctuation)
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-            .focused($focusedField, equals: .longitude)
-            .padding(.horizontal, 16)
-            .frame(height: 46)
-            .background(
-              Capsule(style: .continuous)
-                .fill(.background)
-            )
-            .contentShape(Capsule(style: .continuous))
-            .onTapGesture {
-              focusedField = .longitude
-            }
-            .accessibilityLabel("Longitude")
-        }
-
-        Spacer(minLength: 4)
-
-        Button(role: .destructive) {
-          focusedField = nil
-          if let onDeleteTap {
-            onDeleteTap()
-          } else {
-            isDeleteConfirmationPresented = true
+            Divider()
           }
-        } label: {
-          Label("Delete Point", systemImage: "trash")
-            .font(.body.weight(.medium))
-            .frame(maxWidth: .infinity)
+
+          VStack(alignment: .leading, spacing: 8) {
+            Text("Latitude")
+              .font(.subheadline.weight(.semibold))
+              .foregroundStyle(.primary)
+
+            TextField("-6.216543", text: $latitudeText)
+              .font(.body)
+              .foregroundStyle(.primary)
+              .keyboardType(.numbersAndPunctuation)
+              .autocorrectionDisabled()
+              .textInputAutocapitalization(.never)
+              .focused($focusedField, equals: .latitude)
+              .padding(.horizontal, 16)
+              .padding(.vertical, 8)
+              .frame(minHeight: max(fieldMinHeight, 44))
+              .background(
+                Capsule(style: .continuous)
+                  .fill(Color(.secondarySystemGroupedBackground))
+              )
+              .overlay(
+                Capsule(style: .continuous)
+                  .stroke(
+                    Color.primary.opacity(contrast == .increased ? 0.45 : 0.14),
+                    lineWidth: contrast == .increased ? 1.5 : 1
+                  )
+              )
+              .contentShape(Capsule(style: .continuous))
+              .onTapGesture {
+                focusedField = .latitude
+              }
+              .accessibilityLabel("Latitude")
+              .accessibilityHint("Enter latitude between minus 90 and 90 degrees")
+          }
+
+          VStack(alignment: .leading, spacing: 8) {
+            Text("Longitude")
+              .font(.subheadline.weight(.semibold))
+              .foregroundStyle(.primary)
+
+            TextField("106.849876", text: $longitudeText)
+              .font(.body)
+              .foregroundStyle(.primary)
+              .keyboardType(.numbersAndPunctuation)
+              .autocorrectionDisabled()
+              .textInputAutocapitalization(.never)
+              .focused($focusedField, equals: .longitude)
+              .padding(.horizontal, 16)
+              .padding(.vertical, 8)
+              .frame(minHeight: max(fieldMinHeight, 44))
+              .background(
+                Capsule(style: .continuous)
+                  .fill(Color(.secondarySystemGroupedBackground))
+              )
+              .overlay(
+                Capsule(style: .continuous)
+                  .stroke(
+                    Color.primary.opacity(contrast == .increased ? 0.45 : 0.14),
+                    lineWidth: contrast == .increased ? 1.5 : 1
+                  )
+              )
+              .contentShape(Capsule(style: .continuous))
+              .onTapGesture {
+                focusedField = .longitude
+              }
+              .accessibilityLabel("Longitude")
+              .accessibilityHint("Enter longitude between minus 180 and 180 degrees")
+          }
+
+          Spacer(minLength: 4)
+
+          Button(role: .destructive) {
+            focusedField = nil
+            if let onDeleteTap {
+              onDeleteTap()
+            } else {
+              isDeleteConfirmationPresented = true
+            }
+          } label: {
+            Label("Delete Point", systemImage: "trash")
+              .font(.body.weight(.medium))
+              .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.bordered)
+          .buttonBorderShape(.capsule)
+          .controlSize(.large)
+          .tint(.red)
+          .frame(minHeight: 44)
+          .accessibilityLabel("Delete Point")
+          .accessibilityHint("Deletes \(pointTitle) from the boundary")
         }
-        .buttonStyle(.bordered)
-        .buttonBorderShape(.capsule)
-        .controlSize(.large)
-        .tint(.red)
-        .frame(minHeight: 44)
-        .accessibilityLabel("Delete Point")
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 16)
       }
-      .padding(.horizontal, 20)
-      .padding(.top, 8)
-      .padding(.bottom, 16)
+      .scrollBounceBehavior(.basedOnSize)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       .navigationTitle("Edit Coordinate")
       .navigationBarTitleDisplayMode(.inline)
@@ -155,6 +180,8 @@ struct BoundaryEditCoordinateSheetView: View {
               dismiss()
             }
           }
+          .accessibilityLabel("Cancel")
+          .accessibilityHint("Closes the edit coordinate sheet")
         }
 
         ToolbarItem(placement: .confirmationAction) {
@@ -173,6 +200,8 @@ struct BoundaryEditCoordinateSheetView: View {
           }
           .keyboardShortcut(nil)
           .disabled(!isSubmitEnabled)
+          .accessibilityLabel("Save Coordinate")
+          .accessibilityHint("Saves changes to \(pointTitle)")
         }
       }
       .alert(

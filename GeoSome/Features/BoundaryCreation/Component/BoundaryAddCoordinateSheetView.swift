@@ -11,6 +11,8 @@ struct BoundaryAddCoordinateSheetView: View {
   var onSubmitTap: (() -> Void)?
 
   @FocusState private var isInputFocused: Bool
+  @Environment(\.colorSchemeContrast) private var contrast
+  @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
   init(
     coordinateText: Binding<String> = .constant(""),
@@ -40,15 +42,24 @@ struct BoundaryAddCoordinateSheetView: View {
         Text("Coordinate")
           .font(.headline)
           .foregroundStyle(.primary)
+          .accessibilityAddTraits(.isHeader)
+
+        if differentiateWithoutColor {
+          Label("Format: latitude, longitude (one pair per line)", systemImage: "info.circle")
+            .font(.caption)
+            .foregroundStyle(contrast == .increased ? .primary : .secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
 
         ZStack(alignment: .topLeading) {
           if coordinateText.isEmpty {
             Text("e.g., -6.215432, 106.845321")
               .font(.body)
-              .foregroundStyle(.tertiary)
+              .foregroundStyle(contrast == .increased ? .primary : .secondary)
               .padding(.horizontal, 5)
               .padding(.vertical, 8)
               .allowsHitTesting(false)
+              .accessibilityHidden(true)
           }
 
           TextEditor(text: $coordinateText)
@@ -65,7 +76,14 @@ struct BoundaryAddCoordinateSheetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
           RoundedRectangle(cornerRadius: 22, style: .continuous)
-            .fill(.background)
+            .fill(Color(.secondarySystemGroupedBackground))
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: 22, style: .continuous)
+            .stroke(
+              Color.primary.opacity(contrast == .increased ? 0.45 : 0.14),
+              lineWidth: contrast == .increased ? 1.5 : 1
+            )
         )
         .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .onTapGesture {
@@ -89,6 +107,8 @@ struct BoundaryAddCoordinateSheetView: View {
               dismiss()
             }
           }
+          .accessibilityLabel("Cancel")
+          .accessibilityHint("Closes the add coordinate sheet")
         }
 
         ToolbarItem(placement: .confirmationAction) {
@@ -104,6 +124,8 @@ struct BoundaryAddCoordinateSheetView: View {
           }
           .keyboardShortcut(nil)
           .disabled(!isSubmitEnabled)
+          .accessibilityLabel("Add Coordinates")
+          .accessibilityHint("Saves the entered boundary coordinates")
         }
       }
       .alert(

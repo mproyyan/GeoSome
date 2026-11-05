@@ -18,9 +18,11 @@ struct ProjectListSheet: View {
       Text("All Projects")
         .font(.headline)
         .foregroundStyle(.primary)
+        .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.horizontal, 20)
         .padding(.top, 20)
+        .accessibilityAddTraits(.isHeader)
 
       // Sheet Content
       if projects.isEmpty {
@@ -34,13 +36,19 @@ struct ProjectListSheet: View {
                 ProjectCardView(project: project) {
                   onSelectProject?(project)
                 }
+                .id(project.id)
               }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 4)
           }
-          .frame(height: 156, alignment: .topLeading)
+          .frame(minHeight: 156, alignment: .topLeading)
           .padding(.top, 4)
+          .accessibilityRotor("Projects") {
+            ForEach(projects) { project in
+              AccessibilityRotorEntry(project.name, id: project.id)
+            }
+          }
         }
       }
     }

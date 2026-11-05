@@ -7,6 +7,8 @@ struct EmptyProjectStateView: View {
       systemImage: "doc",
       description: Text("Project files will appear here.")
     )
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("No Project Files. Project files will appear here.")
   }
 }
 
