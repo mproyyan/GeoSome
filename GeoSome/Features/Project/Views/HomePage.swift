@@ -61,6 +61,8 @@ struct HomePage: View {
             projects: viewModel.projects,
             onSelectProject: { project in
               viewModel.selectProject(project)
+              viewModel.dismissProjectSheet()
+              router.navigate(to: .projectDetail(id: project.id))
             }
           )
           .presentationPlacement(.center)
@@ -147,11 +149,6 @@ struct HomePage: View {
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("GeoSome Logo")
   }
-}
-
-#Preview("Populated") {
-  HomePage(viewModel: ProjectViewModel(projects: Project.sampleProjects))
-    .environment(AppRouter())
 }
 
 #Preview("Empty State") {

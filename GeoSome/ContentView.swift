@@ -9,13 +9,15 @@ import SwiftUI
 
 struct ContentView: View {
   @State private var router = AppRouter()
+  @State private var projectViewModel = ProjectViewModel()
 
   var body: some View {
     NavigationStack(path: $router.path) {
-      HomePage()
+      HomePage(viewModel: projectViewModel)
         .withAppRouter()
     }
     .environment(router)
+    .environment(projectViewModel)
   }
 }
 

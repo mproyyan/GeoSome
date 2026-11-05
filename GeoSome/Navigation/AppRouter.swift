@@ -39,7 +39,8 @@ extension View {
       case .boundaryCreation:
         BoundaryCreationView()
       case .projectDetail:
-        BoundaryCreationView()
+        EmptyView()
+          .toolbar(.visible, for: .navigationBar)
       }
     }
   }

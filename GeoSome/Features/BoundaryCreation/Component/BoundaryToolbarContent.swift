@@ -5,6 +5,8 @@ struct BoundaryToolbarContent: ToolbarContent {
   var canUndo: Bool
   var canRedo: Bool
   var canCreateProject: Bool
+  var onBeginEditingName: (() -> Void)?
+  var onFinishEditingName: (() -> Void)?
   var onResetAnchorTap: (() -> Void)?
   var onUndoTap: (() -> Void)?
   var onRedoTap: (() -> Void)?
@@ -15,6 +17,8 @@ struct BoundaryToolbarContent: ToolbarContent {
     canUndo: Bool = false,
     canRedo: Bool = false,
     canCreateProject: Bool = true,
+    onBeginEditingName: (() -> Void)? = nil,
+    onFinishEditingName: (() -> Void)? = nil,
     onResetAnchorTap: (() -> Void)? = nil,
     onUndoTap: (() -> Void)? = nil,
     onRedoTap: (() -> Void)? = nil,
@@ -24,6 +28,8 @@ struct BoundaryToolbarContent: ToolbarContent {
     self.canUndo = canUndo
     self.canRedo = canRedo
     self.canCreateProject = canCreateProject
+    self.onBeginEditingName = onBeginEditingName
+    self.onFinishEditingName = onFinishEditingName
     self.onResetAnchorTap = onResetAnchorTap
     self.onUndoTap = onUndoTap
     self.onRedoTap = onRedoTap
@@ -33,7 +39,11 @@ struct BoundaryToolbarContent: ToolbarContent {
   var body: some ToolbarContent {
     // Leading: Editable Project Name (next to native back button)
     ToolbarItem(placement: .topBarLeading) {
-      BoundaryProjectNameView(projectName: $projectName)
+      BoundaryProjectNameView(
+        projectName: $projectName,
+        onBeginEditing: onBeginEditingName,
+        onFinishEditing: onFinishEditingName
+      )
     }
     .sharedBackgroundVisibility(.hidden)
 
@@ -117,11 +127,19 @@ struct BoundaryToolbarContent: ToolbarContent {
 
 struct BoundaryProjectNameView: View {
   @Binding var projectName: String
+  var onBeginEditing: (() -> Void)?
+  var onFinishEditing: (() -> Void)?
   @State private var isEditing: Bool = false
   @FocusState private var isFocused: Bool
 
-  init(projectName: Binding<String>) {
+  init(
+    projectName: Binding<String>,
+    onBeginEditing: (() -> Void)? = nil,
+    onFinishEditing: (() -> Void)? = nil
+  ) {
     _projectName = projectName
+    self.onBeginEditing = onBeginEditing
+    self.onFinishEditing = onFinishEditing
   }
 
   var body: some View {
@@ -133,6 +151,7 @@ struct BoundaryProjectNameView: View {
           .focused($isFocused)
           .onSubmit {
             isEditing = false
+            onFinishEditing?()
           }
           .padding(.horizontal, 10)
           .padding(.vertical, 5)
@@ -141,6 +160,7 @@ struct BoundaryProjectNameView: View {
 
         Button(action: {
           isEditing = false
+          onFinishEditing?()
         }) {
           Image(systemName: "checkmark.circle.fill")
             .font(.system(size: 18))
@@ -149,6 +169,7 @@ struct BoundaryProjectNameView: View {
         .buttonStyle(.plain)
       } else {
         Button(action: {
+          onBeginEditing?()
           isEditing = true
           isFocused = true
         }) {
@@ -170,6 +191,12 @@ struct BoundaryProjectNameView: View {
         .layoutPriority(1)
         .frame(minHeight: 44)
         .accessibilityLabel("Project name: \(projectName). Tap to edit.")
+      }
+    }
+    .onChange(of: isFocused) { _, focused in
+      if !focused, isEditing {
+        isEditing = false
+        onFinishEditing?()
       }
     }
   }

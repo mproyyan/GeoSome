@@ -3,6 +3,7 @@ import SwiftUI
 
 struct BoundaryCreationView: View {
   @Environment(AppRouter.self) private var router
+  @Environment(ProjectViewModel.self) private var projectViewModel: ProjectViewModel?
   @State private var viewModel: BoundaryCreationViewModel
 
   init(viewModel: BoundaryCreationViewModel? = nil) {
@@ -11,6 +12,13 @@ struct BoundaryCreationView: View {
 
   private var isCurrentDestination: Bool {
     router.currentRoute == .boundaryCreation
+  }
+
+  private var projectNameBinding: Binding<String> {
+    Binding(
+      get: { viewModel.projectName },
+      set: { viewModel.setProjectName($0) }
+    )
   }
 
   private var sheetBinding: Binding<SheetDestination?> {
@@ -182,10 +190,16 @@ struct BoundaryCreationView: View {
     }
     .toolbar {
       BoundaryToolbarContent(
-        projectName: $viewModel.projectName,
+        projectName: projectNameBinding,
         canUndo: viewModel.canUndo,
         canRedo: viewModel.canRedo,
         canCreateProject: viewModel.canCreateProject,
+        onBeginEditingName: {
+          viewModel.beginEditingProjectName()
+        },
+        onFinishEditingName: {
+          viewModel.finishEditingProjectName()
+        },
         onResetAnchorTap: {
           withAnimation(.easeInOut(duration: 0.5)) {
             viewModel.resetAnchor()
@@ -198,7 +212,10 @@ struct BoundaryCreationView: View {
           viewModel.redo()
         },
         onCreateProjectTap: {
-          viewModel.createProject()
+          guard let newProject = viewModel.createProject() else { return }
+          projectViewModel?.addProject(newProject)
+          viewModel.dismissCoordinateSheet()
+          router.popToRoot()
         }
       )
     }
@@ -214,4 +231,5 @@ struct BoundaryCreationView: View {
     BoundaryCreationView()
   }
   .environment(AppRouter(initialPath: [.boundaryCreation]))
+  .environment(ProjectViewModel())
 }

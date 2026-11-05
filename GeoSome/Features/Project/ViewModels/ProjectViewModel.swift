@@ -12,6 +12,7 @@ final class ProjectViewModel {
   private(set) var selectedProject: Project?
   var activeSheet: SheetDestination? = .projectList
   var selectedSheetDetent: PresentationDetent
+  private let storage: ProjectStorageProtocol?
 
   private static let timeFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -27,9 +28,17 @@ final class ProjectViewModel {
 
   init(
     projects: [Project]? = nil,
+    storage: ProjectStorageProtocol? = nil,
     selectedSheetDetent: PresentationDetent = .fraction(0.44)
   ) {
-    self.projects = projects ?? Project.sampleProjects
+    if let projects {
+      self.storage = storage
+      self.projects = projects
+    } else {
+      let resolvedStorage = storage ?? LocalProjectStorage()
+      self.storage = resolvedStorage
+      self.projects = resolvedStorage.loadProjects()
+    }
     self.selectedSheetDetent = selectedSheetDetent
   }
 
@@ -51,22 +60,31 @@ final class ProjectViewModel {
     selectedProject = project
   }
 
-  func addProject(name: String) {
-    guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-    let newProject = Project(name: name, lastEdited: Date())
+  func addProject(_ project: Project) {
+    projects.insert(project, at: 0)
+    storage?.saveProjects(projects)
+  }
+
+  func addProject(name: String, boundaryPoints: [BoundaryPoint] = []) {
+    let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedName.isEmpty else { return }
+    let newProject = Project(
+      name: trimmedName,
+      lastEdited: Date(),
+      boundaryPoints: boundaryPoints
+    )
     projects.insert(newProject, at: 0)
+    storage?.saveProjects(projects)
   }
 
   func deleteProject(id: UUID) {
     projects.removeAll { $0.id == id }
+    storage?.saveProjects(projects)
   }
 
   func clearAllProjects() {
     projects.removeAll()
-  }
-
-  func loadSampleProjects() {
-    projects = Project.sampleProjects
+    storage?.saveProjects(projects)
   }
 
   // MARK: - Presentation Formatting

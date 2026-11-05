@@ -29,9 +29,16 @@ final class BoundaryCreationViewModel {
   var coordinateInputText: String
   var isTooltipVisible: Bool
 
+  private struct EditorSnapshot: Equatable {
+    var projectName: String
+    var points: [BoundaryPoint]
+  }
+
   private(set) var points: [BoundaryPoint]
-  private var undoStack: [[BoundaryPoint]] = []
-  private var redoStack: [[BoundaryPoint]] = []
+  private var undoStack: [EditorSnapshot] = []
+  private var redoStack: [EditorSnapshot] = []
+  private var isEditingNameSession = false
+  private var hasRecordedNameEditInSession = false
 
   var canUndo: Bool {
     !undoStack.isEmpty
@@ -417,6 +424,51 @@ final class BoundaryCreationViewModel {
     cameraPosition = .region(BoundaryMapConfiguration.defaultRegion)
   }
 
+  func beginEditingProjectName() {
+    isEditingNameSession = true
+    hasRecordedNameEditInSession = false
+  }
+
+  func setProjectName(_ newName: String) {
+    guard newName != projectName else { return }
+
+    if !isEditingNameSession {
+      recordUndoSnapshot()
+      projectName = newName
+      return
+    }
+
+    if !hasRecordedNameEditInSession {
+      undoStack.append(
+        EditorSnapshot(
+          projectName: projectName,
+          points: points
+        )
+      )
+      redoStack.removeAll()
+      hasRecordedNameEditInSession = true
+    }
+
+    projectName = newName
+  }
+
+  func finishEditingProjectName() {
+    guard isEditingNameSession else { return }
+    let trimmed = projectName.trimmingCharacters(in: .whitespacesAndNewlines)
+    projectName = trimmed.isEmpty ? "Project name" : trimmed
+
+    if hasRecordedNameEditInSession,
+       let lastSnapshot = undoStack.last,
+       lastSnapshot.projectName == projectName,
+       lastSnapshot.points == points
+    {
+      undoStack.removeLast()
+    }
+
+    isEditingNameSession = false
+    hasRecordedNameEditInSession = false
+  }
+
   func resetAnchor() {
     guard !points.isEmpty else { return }
     recordUndoSnapshot()
@@ -425,21 +477,41 @@ final class BoundaryCreationViewModel {
   }
 
   func undo() {
-    guard let previousPoints = undoStack.popLast() else { return }
-    redoStack.append(points)
-    points = previousPoints
+    finishEditingProjectName()
+    guard let previousSnapshot = undoStack.popLast() else { return }
+    redoStack.append(
+      EditorSnapshot(
+        projectName: projectName,
+        points: points
+      )
+    )
+    projectName = previousSnapshot.projectName
+    points = previousSnapshot.points
     syncSheetDetentForPointCount()
   }
 
   func redo() {
-    guard let nextPoints = redoStack.popLast() else { return }
-    undoStack.append(points)
-    points = nextPoints
+    finishEditingProjectName()
+    guard let nextSnapshot = redoStack.popLast() else { return }
+    undoStack.append(
+      EditorSnapshot(
+        projectName: projectName,
+        points: points
+      )
+    )
+    projectName = nextSnapshot.projectName
+    points = nextSnapshot.points
     syncSheetDetentForPointCount()
   }
 
   private func recordUndoSnapshot() {
-    undoStack.append(points)
+    finishEditingProjectName()
+    undoStack.append(
+      EditorSnapshot(
+        projectName: projectName,
+        points: points
+      )
+    )
     redoStack.removeAll()
   }
 
@@ -451,7 +523,16 @@ final class BoundaryCreationViewModel {
     }
   }
 
-  func createProject() {
-    // Create project action placeholder
+  @discardableResult
+  func createProject() -> Project? {
+    guard canCreateProject else { return nil }
+    finishEditingProjectName()
+    let trimmedName = projectName.trimmingCharacters(in: .whitespacesAndNewlines)
+    let finalName = trimmedName.isEmpty ? "Project name" : trimmedName
+    return Project(
+      name: finalName,
+      lastEdited: Date(),
+      boundaryPoints: points
+    )
   }
 }

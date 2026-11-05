@@ -69,20 +69,6 @@ struct FullWidthPresentationSizing: PresentationSizing {
   }
 }
 
-#Preview("With Projects") {
-  Color.black.ignoresSafeArea()
-    .sheet(isPresented: .constant(true)) {
-      ProjectListSheet(projects: Project.sampleProjects)
-    }
-}
-
-#Preview("Single Project") {
-  Color.black.ignoresSafeArea()
-    .sheet(isPresented: .constant(true)) {
-      ProjectListSheet(projects: [Project.sampleProjects[0]])
-    }
-}
-
 #Preview("Empty State") {
   Color.black.ignoresSafeArea()
     .sheet(isPresented: .constant(true)) {

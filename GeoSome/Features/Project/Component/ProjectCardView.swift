@@ -1,3 +1,4 @@
+import MapKit
 import SwiftUI
 
 struct ProjectCardView: View {
@@ -39,15 +40,24 @@ struct ProjectCardView: View {
   }
 
   private var thumbnailView: some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: 12, style: .continuous)
-        .fill(.tertiary)
-
-      Image(systemName: "map")
-        .font(.title2.weight(.light))
-        .foregroundStyle(.secondary)
+    Map(
+      position: .constant(.region(project.boundaryRegion)),
+      interactionModes: []
+    ) {
+      if project.boundaryCoordinates.count >= 3 {
+        MapPolygon(coordinates: project.boundaryCoordinates)
+          .foregroundStyle(.blue.opacity(0.22))
+          .stroke(.blue, lineWidth: 2)
+      } else if project.boundaryCoordinates.count == 2 {
+        MapPolyline(coordinates: project.boundaryCoordinates)
+          .stroke(.blue, lineWidth: 2)
+      }
     }
+    .mapStyle(.standard(elevation: .realistic))
+    .mapControlVisibility(.hidden)
+    .allowsHitTesting(false)
     .frame(height: 88)
+    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     .padding(4)
   }
 
@@ -70,9 +80,15 @@ struct ProjectCardView: View {
 }
 
 #Preview {
-  HStack(spacing: 12) {
-    ProjectCardView(project: Project.sampleProjects[0])
-    ProjectCardView(project: Project.sampleProjects[1])
-  }
+  ProjectCardView(
+    project: Project(
+      name: "Project name",
+      boundaryPoints: [
+        BoundaryPoint(latitude: -6.2402, longitude: 106.8295),
+        BoundaryPoint(latitude: -6.2398, longitude: 106.8328),
+        BoundaryPoint(latitude: -6.2426, longitude: 106.8334)
+      ]
+    )
+  )
   .padding()
 }
