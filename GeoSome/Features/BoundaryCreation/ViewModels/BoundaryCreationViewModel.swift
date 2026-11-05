@@ -13,7 +13,7 @@ final class BoundaryCreationViewModel {
   var projectName: String
   var cameraPosition: MapCameraPosition
   var isSatelliteStyle: Bool
-  var isCoordinateSheetPresented: Bool
+  var activeSheet: SheetDestination?
   var selectedSheetDetent: PresentationDetent
   var isTooltipVisible: Bool
 
@@ -29,7 +29,7 @@ final class BoundaryCreationViewModel {
     projectName: String = "Project name",
     cameraPosition: MapCameraPosition? = nil,
     isSatelliteStyle: Bool = false,
-    isCoordinateSheetPresented: Bool = false,
+    activeSheet: SheetDestination? = nil,
     selectedSheetDetent: PresentationDetent = .height(260),
     isTooltipVisible: Bool = false,
     points: [BoundaryPoint] = []
@@ -37,13 +37,21 @@ final class BoundaryCreationViewModel {
     self.projectName = projectName
     self.cameraPosition = cameraPosition ?? .region(BoundaryMapConfiguration.defaultRegion)
     self.isSatelliteStyle = isSatelliteStyle
-    self.isCoordinateSheetPresented = isCoordinateSheetPresented
+    self.activeSheet = activeSheet
     self.selectedSheetDetent = selectedSheetDetent
     self.isTooltipVisible = isTooltipVisible
     self.points = points
   }
 
   // MARK: - Intents (Placeholders)
+
+  func presentCoordinateSheet() {
+    activeSheet = .boundaryCoordinate
+  }
+
+  func dismissCoordinateSheet() {
+    activeSheet = nil
+  }
 
   func handleMapTap(at _: CLLocationCoordinate2D) {
     // Tapping the map placeholder

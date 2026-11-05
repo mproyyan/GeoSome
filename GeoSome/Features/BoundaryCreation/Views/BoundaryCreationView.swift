@@ -2,22 +2,21 @@ import MapKit
 import SwiftUI
 
 struct BoundaryCreationView: View {
-  @Environment(\.dismiss) private var dismiss
+  @Environment(AppRouter.self) private var router
   @State private var viewModel: BoundaryCreationViewModel
-  private let isPresentedInNavigation: Bool
 
-  init(
-    viewModel: BoundaryCreationViewModel? = nil,
-    isPresentedInNavigation: Bool = true
-  ) {
+  init(viewModel: BoundaryCreationViewModel? = nil) {
     _viewModel = State(initialValue: viewModel ?? BoundaryCreationViewModel())
-    self.isPresentedInNavigation = isPresentedInNavigation
   }
 
-  private var sheetPresentationBinding: Binding<Bool> {
+  private var isCurrentDestination: Bool {
+    router.currentRoute == .boundaryCreation
+  }
+
+  private var sheetBinding: Binding<SheetDestination?> {
     Binding(
-      get: { isPresentedInNavigation && viewModel.isCoordinateSheetPresented },
-      set: { viewModel.isCoordinateSheetPresented = $0 }
+      get: { isCurrentDestination ? viewModel.activeSheet : nil },
+      set: { viewModel.activeSheet = $0 }
     )
   }
 
@@ -48,39 +47,44 @@ struct BoundaryCreationView: View {
       .padding(.trailing, 20)
       .padding(.bottom, 28)
     }
-    .sheet(isPresented: sheetPresentationBinding) {
-      BoundaryCoordinateSheetView(
-        isTooltipVisible: $viewModel.isTooltipVisible,
-        onHelpTap: {
-          viewModel.toggleTooltip()
-        },
-        onAddCoordinateTap: {
-          viewModel.addCoordinate()
-        }
-      )
-      .presentationPlacement(.leading)
-      .presentationDetents(
-        [
-          BoundaryCreationViewModel.collapsedSheetDetent,
-          BoundaryCreationViewModel.defaultSheetDetent,
-          .medium,
-          .large
-        ],
-        selection: $viewModel.selectedSheetDetent
-      )
-      .presentationDragIndicator(.visible)
-      .presentationBackgroundInteraction(.enabled)
-      .presentationContentInteraction(.scrolls)
-      .interactiveDismissDisabled()
+    .sheet(item: sheetBinding) { destination in
+      switch destination {
+      case .boundaryCoordinate:
+        BoundaryCoordinateSheetView(
+          isTooltipVisible: $viewModel.isTooltipVisible,
+          onHelpTap: {
+            viewModel.toggleTooltip()
+          },
+          onAddCoordinateTap: {
+            viewModel.addCoordinate()
+          }
+        )
+        .presentationPlacement(.leading)
+        .presentationDetents(
+          [
+            BoundaryCreationViewModel.collapsedSheetDetent,
+            BoundaryCreationViewModel.defaultSheetDetent,
+            .medium,
+            .large
+          ],
+          selection: $viewModel.selectedSheetDetent
+        )
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled)
+        .presentationContentInteraction(.scrolls)
+        .interactiveDismissDisabled()
+      case .projectList:
+        EmptyView()
+      }
     }
     .task {
       try? await Task.sleep(for: .milliseconds(450))
-      if !Task.isCancelled, isPresentedInNavigation {
-        viewModel.isCoordinateSheetPresented = true
+      if !Task.isCancelled, isCurrentDestination {
+        viewModel.presentCoordinateSheet()
       }
     }
     .onDisappear {
-      viewModel.isCoordinateSheetPresented = false
+      viewModel.dismissCoordinateSheet()
     }
     .toolbar {
       BoundaryToolbarContent(
@@ -115,4 +119,5 @@ struct BoundaryCreationView: View {
   NavigationStack {
     BoundaryCreationView()
   }
+  .environment(AppRouter(initialPath: [.boundaryCreation]))
 }

@@ -1,21 +1,17 @@
 import SwiftUI
 
 struct HomePage: View {
+  @Environment(AppRouter.self) private var router
   @State private var viewModel: ProjectViewModel
-  var onStartProject: (() -> Void)?
 
-  init(
-    viewModel: ProjectViewModel? = nil,
-    onStartProject: (() -> Void)? = nil
-  ) {
+  init(viewModel: ProjectViewModel? = nil) {
     _viewModel = State(initialValue: viewModel ?? ProjectViewModel())
-    self.onStartProject = onStartProject
   }
 
-  private var projectSheetPresentationBinding: Binding<Bool> {
+  private var sheetBinding: Binding<SheetDestination?> {
     Binding(
-      get: { !viewModel.isShowingBoundaryCreation && viewModel.isProjectSheetPresented },
-      set: { viewModel.isProjectSheetPresented = $0 }
+      get: { router.isAtRoot ? viewModel.activeSheet : nil },
+      set: { viewModel.activeSheet = $0 }
     )
   }
 
@@ -46,11 +42,8 @@ struct HomePage: View {
           }
 
           StartProjectButton(action: {
-            if let onStartProject {
-              onStartProject()
-            } else {
-              viewModel.startNewProject()
-            }
+            viewModel.dismissProjectSheet()
+            router.navigate(to: .boundaryCreation)
           })
           .padding(.top, 4)
 
@@ -61,40 +54,42 @@ struct HomePage: View {
       }
       .ignoresSafeArea()
       .toolbar(.hidden, for: .navigationBar)
-      .sheet(isPresented: projectSheetPresentationBinding) {
-        ProjectListSheet(
-          projects: viewModel.projects,
-          onSelectProject: { project in
-            viewModel.selectProject(project)
-          }
-        )
-        .presentationPlacement(.center)
-        .presentationSizing(FullWidthPresentationSizing())
-        .presentationDetents(
-          [
-            ProjectViewModel.defaultSheetDetent,
-            ProjectViewModel.expandedSheetDetent
-          ],
-          selection: $viewModel.selectedSheetDetent
-        )
-        .presentationDragIndicator(.visible)
-        .presentationBackground(.background)
-        .presentationBackgroundInteraction(.enabled)
-        .presentationContentInteraction(.scrolls)
-        .interactiveDismissDisabled()
-      }
-      .onChange(of: viewModel.isShowingBoundaryCreation) { _, isShowing in
-        if !isShowing {
-          Task {
-            try? await Task.sleep(for: .milliseconds(550))
-            viewModel.handleBoundaryCreationDismissed()
-          }
+      .sheet(item: sheetBinding) { destination in
+        switch destination {
+        case .projectList:
+          ProjectListSheet(
+            projects: viewModel.projects,
+            onSelectProject: { project in
+              viewModel.selectProject(project)
+            }
+          )
+          .presentationPlacement(.center)
+          .presentationSizing(FullWidthPresentationSizing())
+          .presentationDetents(
+            [
+              ProjectViewModel.defaultSheetDetent,
+              ProjectViewModel.expandedSheetDetent
+            ],
+            selection: $viewModel.selectedSheetDetent
+          )
+          .presentationDragIndicator(.visible)
+          .presentationBackground(.background)
+          .presentationBackgroundInteraction(.enabled)
+          .presentationContentInteraction(.scrolls)
+          .interactiveDismissDisabled()
+        case .boundaryCoordinate:
+          EmptyView()
         }
       }
-      .navigationDestination(isPresented: $viewModel.isShowingBoundaryCreation) {
-        BoundaryCreationView(
-          isPresentedInNavigation: viewModel.isShowingBoundaryCreation
-        )
+      .onChange(of: router.isAtRoot) { _, isAtRoot in
+        if isAtRoot {
+          Task {
+            try? await Task.sleep(for: .milliseconds(550))
+            if router.isAtRoot {
+              viewModel.presentProjectSheet()
+            }
+          }
+        }
       }
     }
   }
@@ -156,8 +151,10 @@ struct HomePage: View {
 
 #Preview("Populated") {
   HomePage(viewModel: ProjectViewModel(projects: Project.sampleProjects))
+    .environment(AppRouter())
 }
 
 #Preview("Empty State") {
   HomePage(viewModel: ProjectViewModel(projects: []))
+    .environment(AppRouter())
 }

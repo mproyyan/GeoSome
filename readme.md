@@ -11,6 +11,10 @@ GeoSome/
 │   ├── GeoSomeApp.swift
 │   ├── ContentView.swift
 │   │
+│   ├── Navigation/
+│   │   ├── AppRoute.swift
+│   │   └── AppRouter.swift
+│   │
 │   └── Features/
 │       ├── Project/
 │       │   ├── Models/
@@ -30,9 +34,11 @@ GeoSome/
 
 ## 📖 Structure Overview
 
-### 1. Root & App Level
+### 1. Root, App & Navigation Level
 - **`GeoSome/`**: The primary source code directory for the application.
 - **`GeoSomeApp.swift`**: The main entry point for the SwiftUI application.
+- **`ContentView.swift`**: Hosts the root `NavigationStack` bound to `AppRouter`.
+- **`Navigation/`**: Centralized navigation routing (`AppRouter`, `AppRoute`, `SheetDestination`).
 - **`Assets.xcassets/`**: Catalog for icons, image assets, and color sets.
 
 ---

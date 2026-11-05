@@ -10,9 +10,8 @@ final class ProjectViewModel {
 
   private(set) var projects: [Project]
   private(set) var selectedProject: Project?
-  var isProjectSheetPresented: Bool = true
+  var activeSheet: SheetDestination? = .projectList
   var selectedSheetDetent: PresentationDetent
-  var isShowingBoundaryCreation: Bool = false
 
   private static let timeFormatter: DateFormatter = {
     let formatter = DateFormatter()
@@ -40,15 +39,12 @@ final class ProjectViewModel {
 
   // MARK: - Intents
 
-  func startNewProject() {
-    isProjectSheetPresented = false
-    isShowingBoundaryCreation = true
+  func dismissProjectSheet() {
+    activeSheet = nil
   }
 
-  func handleBoundaryCreationDismissed() {
-    if !isShowingBoundaryCreation {
-      isProjectSheetPresented = true
-    }
+  func presentProjectSheet() {
+    activeSheet = .projectList
   }
 
   func selectProject(_ project: Project) {
