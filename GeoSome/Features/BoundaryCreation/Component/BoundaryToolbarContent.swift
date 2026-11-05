@@ -63,12 +63,13 @@ struct BoundaryToolbarContent: ToolbarContent {
         }) {
           Image(systemName: "arrow.uturn.backward")
             .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(Color.primary.opacity(canUndo ? 1.0 : 0.85))
+            .foregroundStyle(Color.primary.opacity(canUndo ? 1.0 : 0.4))
             .frame(width: 36, height: 36)
             .clipShape(Circle())
             .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 1)
         }
         .frame(minWidth: 44, minHeight: 44)
+        .disabled(!canUndo)
         .buttonStyle(.glass(.regular))
         .buttonBorderShape(.automatic)
         .accessibilityLabel("Undo")
@@ -79,12 +80,13 @@ struct BoundaryToolbarContent: ToolbarContent {
         }) {
           Image(systemName: "arrow.uturn.forward")
             .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(Color.primary.opacity(canRedo ? 1.0 : 0.85))
+            .foregroundStyle(Color.primary.opacity(canRedo ? 1.0 : 0.4))
             .frame(width: 36, height: 36)
             .clipShape(Circle())
             .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 1)
         }
         .frame(minWidth: 44, minHeight: 44)
+        .disabled(!canRedo)
         .buttonStyle(.glass(.regular))
         .buttonBorderShape(.automatic)
         .accessibilityLabel("Redo")

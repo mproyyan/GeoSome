@@ -30,8 +30,16 @@ final class BoundaryCreationViewModel {
   var isTooltipVisible: Bool
 
   private(set) var points: [BoundaryPoint]
-  private(set) var canUndo: Bool = false
-  private(set) var canRedo: Bool = false
+  private var undoStack: [[BoundaryPoint]] = []
+  private var redoStack: [[BoundaryPoint]] = []
+
+  var canUndo: Bool {
+    !undoStack.isEmpty
+  }
+
+  var canRedo: Bool {
+    !redoStack.isEmpty
+  }
 
   var canCreateProject: Bool {
     points.count >= 3
@@ -154,10 +162,14 @@ final class BoundaryCreationViewModel {
       return
     }
 
+    recordUndoSnapshot()
     points.append(BoundaryPoint(coordinate: coordinate))
-    if points.count >= 3, selectedSheetDetent == Self.defaultSheetDetent {
-      selectedSheetDetent = Self.populatedSheetDetent
-    }
+    syncSheetDetentForPointCount()
+  }
+
+  func beginPointDrag() {
+    guard !isAddCoordinateSheetPresented, editingPoint == nil else { return }
+    recordUndoSnapshot()
   }
 
   func updatePointCoordinate(
@@ -232,8 +244,14 @@ final class BoundaryCreationViewModel {
     }
 
     if let index = points.firstIndex(where: { $0.id == editingPoint.id }) {
-      points[index].latitude = updatedCoordinate.latitude
-      points[index].longitude = updatedCoordinate.longitude
+      let hasChanged =
+        points[index].latitude != updatedCoordinate.latitude ||
+        points[index].longitude != updatedCoordinate.longitude
+      if hasChanged {
+        recordUndoSnapshot()
+        points[index].latitude = updatedCoordinate.latitude
+        points[index].longitude = updatedCoordinate.longitude
+      }
     }
 
     dismissEditCoordinateSheet()
@@ -244,12 +262,11 @@ final class BoundaryCreationViewModel {
   }
 
   func confirmDeleteEditingPoint() {
-    if let editingPoint {
+    if let editingPoint, points.contains(where: { $0.id == editingPoint.id }) {
+      recordUndoSnapshot()
       points.removeAll { $0.id == editingPoint.id }
     }
-    if points.count < 3, selectedSheetDetent == Self.populatedSheetDetent {
-      selectedSheetDetent = Self.defaultSheetDetent
-    }
+    syncSheetDetentForPointCount()
     dismissEditCoordinateSheet()
   }
 
@@ -278,10 +295,9 @@ final class BoundaryCreationViewModel {
       return
     }
 
+    recordUndoSnapshot()
     points.append(contentsOf: parsedPoints)
-    if points.count >= 3, selectedSheetDetent == Self.defaultSheetDetent {
-      selectedSheetDetent = Self.populatedSheetDetent
-    }
+    syncSheetDetentForPointCount()
     focusOnCoordinates(points.map(\.coordinate))
     dismissAddCoordinateSheet()
   }
@@ -402,15 +418,37 @@ final class BoundaryCreationViewModel {
   }
 
   func resetAnchor() {
-    cameraPosition = .region(BoundaryMapConfiguration.defaultRegion)
+    guard !points.isEmpty else { return }
+    recordUndoSnapshot()
+    points.removeAll()
+    syncSheetDetentForPointCount()
   }
 
   func undo() {
-    // Undo action placeholder
+    guard let previousPoints = undoStack.popLast() else { return }
+    redoStack.append(points)
+    points = previousPoints
+    syncSheetDetentForPointCount()
   }
 
   func redo() {
-    // Redo action placeholder
+    guard let nextPoints = redoStack.popLast() else { return }
+    undoStack.append(points)
+    points = nextPoints
+    syncSheetDetentForPointCount()
+  }
+
+  private func recordUndoSnapshot() {
+    undoStack.append(points)
+    redoStack.removeAll()
+  }
+
+  private func syncSheetDetentForPointCount() {
+    if points.count >= 3, selectedSheetDetent == Self.defaultSheetDetent {
+      selectedSheetDetent = Self.populatedSheetDetent
+    } else if points.count < 3, selectedSheetDetent == Self.populatedSheetDetent {
+      selectedSheetDetent = Self.defaultSheetDetent
+    }
   }
 
   func createProject() {

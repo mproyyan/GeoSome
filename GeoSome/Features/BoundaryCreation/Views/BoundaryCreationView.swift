@@ -44,6 +44,9 @@ struct BoundaryCreationView: View {
       onMapTap: { coordinate in
         viewModel.handleMapTap(at: coordinate)
       },
+      onBeginMovePoint: {
+        viewModel.beginPointDrag()
+      },
       onMovePoint: { id, newCoordinate in
         viewModel.updatePointCoordinate(id: id, to: newCoordinate)
       }

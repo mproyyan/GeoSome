@@ -6,10 +6,12 @@ struct BoundaryMapContentLayer: View {
   var points: [BoundaryPoint]
   var isSatelliteStyle: Bool
   var onMapTap: ((CLLocationCoordinate2D) -> Void)?
+  var onBeginMovePoint: (() -> Void)?
   var onMovePoint: ((BoundaryPoint.ID, CLLocationCoordinate2D) -> Void)?
 
   @State private var draggingPointID: BoundaryPoint.ID?
   @State private var dragStartCoordinate: CLLocationCoordinate2D?
+  @State private var didRecordDragStart: Bool = false
   @State private var lastPointInteractionTime: Date = .distantPast
 
   init(
@@ -17,12 +19,14 @@ struct BoundaryMapContentLayer: View {
     points: [BoundaryPoint] = [],
     isSatelliteStyle: Bool = false,
     onMapTap: ((CLLocationCoordinate2D) -> Void)? = nil,
+    onBeginMovePoint: (() -> Void)? = nil,
     onMovePoint: ((BoundaryPoint.ID, CLLocationCoordinate2D) -> Void)? = nil
   ) {
     _cameraPosition = cameraPosition
     self.points = points
     self.isSatelliteStyle = isSatelliteStyle
     self.onMapTap = onMapTap
+    self.onBeginMovePoint = onBeginMovePoint
     self.onMovePoint = onMovePoint
   }
 
@@ -150,6 +154,7 @@ struct BoundaryMapContentLayer: View {
             if draggingPointID != point.id {
               draggingPointID = point.id
               dragStartCoordinate = point.coordinate
+              didRecordDragStart = false
             }
 
             let distance = hypot(value.translation.width, value.translation.height)
@@ -159,6 +164,11 @@ struct BoundaryMapContentLayer: View {
               let startScreenPoint = proxy.convert(startCoordinate, to: .local)
             else {
               return
+            }
+
+            if !didRecordDragStart {
+              didRecordDragStart = true
+              onBeginMovePoint?()
             }
 
             let targetScreenPoint = CGPoint(
@@ -178,6 +188,10 @@ struct BoundaryMapContentLayer: View {
                let startCoordinate = dragStartCoordinate,
                let startScreenPoint = proxy.convert(startCoordinate, to: .local)
             {
+              if !didRecordDragStart {
+                didRecordDragStart = true
+                onBeginMovePoint?()
+              }
               let targetScreenPoint = CGPoint(
                 x: startScreenPoint.x + value.translation.width,
                 y: startScreenPoint.y + value.translation.height
@@ -189,6 +203,7 @@ struct BoundaryMapContentLayer: View {
 
             draggingPointID = nil
             dragStartCoordinate = nil
+            didRecordDragStart = false
           }
       )
       .accessibilityLabel("Boundary point \(index + 1)")
