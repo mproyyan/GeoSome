@@ -43,6 +43,9 @@ struct BoundaryCreationView: View {
       isSatelliteStyle: viewModel.isSatelliteStyle,
       onMapTap: { coordinate in
         viewModel.handleMapTap(at: coordinate)
+      },
+      onMovePoint: { id, newCoordinate in
+        viewModel.updatePointCoordinate(id: id, to: newCoordinate)
       }
     )
     .overlay(alignment: .bottomTrailing) {

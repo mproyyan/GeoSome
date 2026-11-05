@@ -160,6 +160,23 @@ final class BoundaryCreationViewModel {
     }
   }
 
+  func updatePointCoordinate(
+    id: BoundaryPoint.ID,
+    to coordinate: CLLocationCoordinate2D
+  ) {
+    guard
+      !isAddCoordinateSheetPresented,
+      editingPoint == nil,
+      CLLocationCoordinate2DIsValid(coordinate),
+      let index = points.firstIndex(where: { $0.id == id })
+    else {
+      return
+    }
+
+    points[index].latitude = coordinate.latitude
+    points[index].longitude = coordinate.longitude
+  }
+
   func addCoordinate() {
     isAddCoordinateSheetPresented = true
   }
