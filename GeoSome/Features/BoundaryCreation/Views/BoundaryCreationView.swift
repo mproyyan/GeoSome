@@ -20,6 +20,13 @@ struct BoundaryCreationView: View {
     )
   }
 
+  private var addCoordinateSheetBinding: Binding<Bool> {
+    Binding(
+      get: { isCurrentDestination && viewModel.isAddCoordinateSheetPresented },
+      set: { viewModel.isAddCoordinateSheetPresented = $0 }
+    )
+  }
+
   var body: some View {
     @Bindable var viewModel = viewModel
 
@@ -73,6 +80,34 @@ struct BoundaryCreationView: View {
         .presentationBackgroundInteraction(.enabled)
         .presentationContentInteraction(.scrolls)
         .interactiveDismissDisabled()
+        .sheet(isPresented: addCoordinateSheetBinding) {
+          BoundaryAddCoordinateSheetView(
+            coordinateText: $viewModel.coordinateInputText,
+            isDiscardConfirmationPresented: $viewModel.isDiscardConfirmationPresented,
+            isInvalidCoordinateAlertPresented: $viewModel.isInvalidCoordinateAlertPresented,
+            canSubmit: viewModel.canSubmitCoordinate,
+            onCloseTap: {
+              viewModel.requestDismissAddCoordinateSheet()
+            },
+            onDiscardConfirm: {
+              viewModel.confirmDiscardCoordinateInput()
+            },
+            onSubmitTap: {
+              viewModel.submitCoordinate()
+            }
+          )
+          .presentationPlacement(.leading)
+          .presentationDetents(
+            [
+              BoundaryCreationViewModel.defaultSheetDetent,
+              .medium,
+              .large
+            ]
+          )
+          .presentationDragIndicator(.visible)
+          .presentationBackgroundInteraction(.enabled)
+          .interactiveDismissDisabled(viewModel.hasUnsavedCoordinateInput)
+        }
       case .projectList:
         EmptyView()
       }
