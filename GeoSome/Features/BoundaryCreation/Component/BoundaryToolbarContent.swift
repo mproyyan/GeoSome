@@ -109,6 +109,7 @@ struct BoundaryToolbarContent: ToolbarContent {
         }) {
           Text("Create Project")
             .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(canCreateProject ? Color.white : Color.primary.opacity(0.4))
             .padding(.horizontal, 16)
             .frame(height: 36)
             .clipShape(Capsule())
@@ -116,7 +117,7 @@ struct BoundaryToolbarContent: ToolbarContent {
         }
         .frame(minWidth: 44, minHeight: 44)
         .disabled(!canCreateProject)
-        .buttonStyle(.glass)
+        .buttonStyle(.glass(canCreateProject ? .regular.tint(.blue) : .regular))
         .buttonBorderShape(.automatic)
         .accessibilityLabel("Create Project")
       }
