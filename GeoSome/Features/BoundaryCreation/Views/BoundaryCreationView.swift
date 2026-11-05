@@ -39,6 +39,7 @@ struct BoundaryCreationView: View {
 
     BoundaryMapContentLayer(
       cameraPosition: $viewModel.cameraPosition,
+      points: viewModel.points,
       isSatelliteStyle: viewModel.isSatelliteStyle,
       onMapTap: { coordinate in
         viewModel.handleMapTap(at: coordinate)
@@ -67,6 +68,9 @@ struct BoundaryCreationView: View {
         BoundaryCoordinateSheetView(
           isTooltipVisible: $viewModel.isTooltipVisible,
           points: viewModel.points,
+          boundaryPointsText: viewModel.boundaryPointsSummaryText,
+          areaPrimaryText: viewModel.areaSquareMetersText,
+          areaSecondaryText: viewModel.areaHectaresText,
           onHelpTap: {
             viewModel.toggleTooltip()
           },

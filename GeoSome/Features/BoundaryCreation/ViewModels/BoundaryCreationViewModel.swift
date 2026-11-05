@@ -37,6 +37,42 @@ final class BoundaryCreationViewModel {
     points.count >= 3
   }
 
+  var boundaryPointsSummaryText: String {
+    "\(points.count) \(points.count == 1 ? "point" : "points")"
+  }
+
+  var areaSquareMeters: Double {
+    guard points.count >= 3 else { return 0 }
+
+    let mapPoints = points.map { MKMapPoint($0.coordinate) }
+    var shoelaceSum = 0.0
+    for index in mapPoints.indices {
+      let current = mapPoints[index]
+      let next = mapPoints[(index + 1) % mapPoints.count]
+      shoelaceSum += (current.x * next.y) - (next.x * current.y)
+    }
+
+    let areaInMapPoints = abs(shoelaceSum) * 0.5
+    let averageLatitude = points.reduce(0.0) { $0 + $1.latitude } / Double(points.count)
+    let metersPerMapPoint = MKMetersPerMapPointAtLatitude(averageLatitude)
+    return areaInMapPoints * metersPerMapPoint * metersPerMapPoint
+  }
+
+  var areaSquareMetersText: String {
+    let formatted = areaSquareMeters.formatted(
+      .number.precision(.fractionLength(0 ... 1))
+    )
+    return "\(formatted) m²"
+  }
+
+  var areaHectaresText: String {
+    let hectares = areaSquareMeters / 10000.0
+    let formatted = hectares.formatted(
+      .number.precision(.fractionLength(0 ... 2))
+    )
+    return "\(formatted) ha"
+  }
+
   var hasUnsavedCoordinateInput: Bool {
     !coordinateInputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
@@ -109,8 +145,19 @@ final class BoundaryCreationViewModel {
     activeSheet = nil
   }
 
-  func handleMapTap(at _: CLLocationCoordinate2D) {
-    // Tapping the map placeholder
+  func handleMapTap(at coordinate: CLLocationCoordinate2D) {
+    guard
+      !isAddCoordinateSheetPresented,
+      editingPoint == nil,
+      CLLocationCoordinate2DIsValid(coordinate)
+    else {
+      return
+    }
+
+    points.append(BoundaryPoint(coordinate: coordinate))
+    if points.count >= 3, selectedSheetDetent == Self.defaultSheetDetent {
+      selectedSheetDetent = Self.populatedSheetDetent
+    }
   }
 
   func addCoordinate() {
@@ -220,7 +267,44 @@ final class BoundaryCreationViewModel {
     if points.count >= 3, selectedSheetDetent == Self.defaultSheetDetent {
       selectedSheetDetent = Self.populatedSheetDetent
     }
+    focusOnCoordinates(points.map(\.coordinate))
     dismissAddCoordinateSheet()
+  }
+
+  private func focusOnCoordinates(_ coordinates: [CLLocationCoordinate2D]) {
+    guard let first = coordinates.first else { return }
+
+    if coordinates.count == 1 {
+      cameraPosition = .region(
+        MKCoordinateRegion(
+          center: first,
+          span: BoundaryMapConfiguration.defaultSpan
+        )
+      )
+      return
+    }
+
+    var minLat = first.latitude
+    var maxLat = first.latitude
+    var minLon = first.longitude
+    var maxLon = first.longitude
+
+    for coordinate in coordinates {
+      minLat = min(minLat, coordinate.latitude)
+      maxLat = max(maxLat, coordinate.latitude)
+      minLon = min(minLon, coordinate.longitude)
+      maxLon = max(maxLon, coordinate.longitude)
+    }
+
+    let center = CLLocationCoordinate2D(
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLon + maxLon) / 2
+    )
+    let span = MKCoordinateSpan(
+      latitudeDelta: max((maxLat - minLat) * 1.6, BoundaryMapConfiguration.defaultSpan.latitudeDelta),
+      longitudeDelta: max((maxLon - minLon) * 1.6, BoundaryMapConfiguration.defaultSpan.longitudeDelta)
+    )
+    cameraPosition = .region(MKCoordinateRegion(center: center, span: span))
   }
 
   static func isValidCoordinateInput(_ text: String) -> Bool {
