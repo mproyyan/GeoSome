@@ -4,9 +4,21 @@ import SwiftUI
 struct BoundaryCreationView: View {
   @Environment(\.dismiss) private var dismiss
   @State private var viewModel: BoundaryCreationViewModel
+  private let isPresentedInNavigation: Bool
 
-  init(viewModel: BoundaryCreationViewModel? = nil) {
+  init(
+    viewModel: BoundaryCreationViewModel? = nil,
+    isPresentedInNavigation: Bool = true
+  ) {
     _viewModel = State(initialValue: viewModel ?? BoundaryCreationViewModel())
+    self.isPresentedInNavigation = isPresentedInNavigation
+  }
+
+  private var sheetPresentationBinding: Binding<Bool> {
+    Binding(
+      get: { isPresentedInNavigation && viewModel.isCoordinateSheetPresented },
+      set: { viewModel.isCoordinateSheetPresented = $0 }
+    )
   }
 
   var body: some View {
@@ -36,7 +48,7 @@ struct BoundaryCreationView: View {
       .padding(.trailing, 20)
       .padding(.bottom, 28)
     }
-    .sheet(isPresented: $viewModel.isCoordinateSheetPresented) {
+    .sheet(isPresented: sheetPresentationBinding) {
       BoundaryCoordinateSheetView(
         isTooltipVisible: $viewModel.isTooltipVisible,
         onHelpTap: {
@@ -61,8 +73,11 @@ struct BoundaryCreationView: View {
       .presentationContentInteraction(.scrolls)
       .interactiveDismissDisabled()
     }
-    .onAppear {
-      viewModel.isCoordinateSheetPresented = true
+    .task {
+      try? await Task.sleep(for: .milliseconds(450))
+      if !Task.isCancelled, isPresentedInNavigation {
+        viewModel.isCoordinateSheetPresented = true
+      }
     }
     .onDisappear {
       viewModel.isCoordinateSheetPresented = false

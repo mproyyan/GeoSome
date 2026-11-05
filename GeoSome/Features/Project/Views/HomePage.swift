@@ -12,6 +12,13 @@ struct HomePage: View {
     self.onStartProject = onStartProject
   }
 
+  private var projectSheetPresentationBinding: Binding<Bool> {
+    Binding(
+      get: { !viewModel.isShowingBoundaryCreation && viewModel.isProjectSheetPresented },
+      set: { viewModel.isProjectSheetPresented = $0 }
+    )
+  }
+
   var body: some View {
     @Bindable var viewModel = viewModel
 
@@ -28,11 +35,11 @@ struct HomePage: View {
 
           VStack(spacing: 8) {
             Text("Terravise")
-              .font(.system(size: 36, weight: .bold))
+              .font(.largeTitle.weight(.bold))
               .foregroundStyle(.white)
 
             Text("Plan your site investigation with data-driven CPT recommendations.")
-              .font(.system(size: 14, weight: .regular))
+              .font(.subheadline)
               .foregroundStyle(.white.opacity(0.88))
               .multilineTextAlignment(.center)
               .padding(.horizontal, 32)
@@ -51,19 +58,43 @@ struct HomePage: View {
         }
         .frame(width: geometry.size.width, height: geometry.size.height * 0.56)
         .padding(.top, geometry.safeAreaInsets.top)
-
-        // Interactive Full-Width Bottom Sheet (pinned to bottom, edge-to-edge)
+      }
+      .ignoresSafeArea()
+      .toolbar(.hidden, for: .navigationBar)
+      .sheet(isPresented: projectSheetPresentationBinding) {
         ProjectListSheet(
           projects: viewModel.projects,
           onSelectProject: { project in
             viewModel.selectProject(project)
           }
         )
+        .presentationPlacement(.center)
+        .presentationSizing(FullWidthPresentationSizing())
+        .presentationDetents(
+          [
+            ProjectViewModel.defaultSheetDetent,
+            ProjectViewModel.expandedSheetDetent
+          ],
+          selection: $viewModel.selectedSheetDetent
+        )
+        .presentationDragIndicator(.visible)
+        .presentationBackground(.background)
+        .presentationBackgroundInteraction(.enabled)
+        .presentationContentInteraction(.scrolls)
+        .interactiveDismissDisabled()
       }
-      .ignoresSafeArea()
-      .toolbar(.hidden, for: .navigationBar)
+      .onChange(of: viewModel.isShowingBoundaryCreation) { _, isShowing in
+        if !isShowing {
+          Task {
+            try? await Task.sleep(for: .milliseconds(550))
+            viewModel.handleBoundaryCreationDismissed()
+          }
+        }
+      }
       .navigationDestination(isPresented: $viewModel.isShowingBoundaryCreation) {
-        BoundaryCreationView()
+        BoundaryCreationView(
+          isPresentedInNavigation: viewModel.isShowingBoundaryCreation
+        )
       }
     }
   }
@@ -115,7 +146,7 @@ struct HomePage: View {
         .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 4)
 
       Image(systemName: "square.3.layers.3d.down.right")
-        .font(.system(size: 26, weight: .semibold))
+        .font(.title2.weight(.semibold))
         .foregroundStyle(.white)
     }
     .accessibilityElement(children: .ignore)

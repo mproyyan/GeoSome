@@ -29,7 +29,7 @@ final class BoundaryCreationViewModel {
     projectName: String = "Project name",
     cameraPosition: MapCameraPosition? = nil,
     isSatelliteStyle: Bool = false,
-    isCoordinateSheetPresented: Bool = true,
+    isCoordinateSheetPresented: Bool = false,
     selectedSheetDetent: PresentationDetent = .height(260),
     isTooltipVisible: Bool = false,
     points: [BoundaryPoint] = []

@@ -1,11 +1,17 @@
 import Foundation
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
 final class ProjectViewModel {
+  static let defaultSheetDetent: PresentationDetent = .fraction(0.44)
+  static let expandedSheetDetent: PresentationDetent = .fraction(0.88)
+
   private(set) var projects: [Project]
   private(set) var selectedProject: Project?
+  var isProjectSheetPresented: Bool = true
+  var selectedSheetDetent: PresentationDetent
   var isShowingBoundaryCreation: Bool = false
 
   private static let timeFormatter: DateFormatter = {
@@ -20,8 +26,12 @@ final class ProjectViewModel {
     return formatter
   }()
 
-  init(projects: [Project]? = nil) {
+  init(
+    projects: [Project]? = nil,
+    selectedSheetDetent: PresentationDetent = .fraction(0.44)
+  ) {
     self.projects = projects ?? Project.sampleProjects
+    self.selectedSheetDetent = selectedSheetDetent
   }
 
   var hasProjects: Bool {
@@ -31,7 +41,14 @@ final class ProjectViewModel {
   // MARK: - Intents
 
   func startNewProject() {
+    isProjectSheetPresented = false
     isShowingBoundaryCreation = true
+  }
+
+  func handleBoundaryCreationDismissed() {
+    if !isShowingBoundaryCreation {
+      isProjectSheetPresented = true
+    }
   }
 
   func selectProject(_ project: Project) {

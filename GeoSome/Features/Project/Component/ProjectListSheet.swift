@@ -3,79 +3,31 @@ import SwiftUI
 struct ProjectListSheet: View {
   let projects: [Project]
   var onSelectProject: ((Project) -> Void)?
-  var minHeightRatio: CGFloat
-  var maxHeightRatio: CGFloat
-
-  @State private var isExpanded: Bool = false
-  @State private var dragOffset: CGFloat = 0
 
   init(
     projects: [Project],
-    minHeightRatio: CGFloat = 0.44,
-    maxHeightRatio: CGFloat = 0.88,
     onSelectProject: ((Project) -> Void)? = nil
   ) {
     self.projects = projects
-    self.minHeightRatio = minHeightRatio
-    self.maxHeightRatio = maxHeightRatio
     self.onSelectProject = onSelectProject
   }
 
   var body: some View {
-    GeometryReader { geometry in
-      let screenHeight = geometry.size.height
-      let minHeight = screenHeight * minHeightRatio
-      let maxHeight = screenHeight * maxHeightRatio
-      let baseHeight = isExpanded ? maxHeight : minHeight
-      let rawHeight = baseHeight - dragOffset
+    VStack(spacing: 12) {
+      // Pinned Header
+      Text("All Projects")
+        .font(.headline)
+        .foregroundStyle(.primary)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
 
-      // Prevent dragging below minHeight (rubber-band resistance)
-      let clampedHeight: CGFloat = if rawHeight < minHeight {
-        minHeight - (minHeight - rawHeight) * 0.2
-      } else if rawHeight > maxHeight {
-        maxHeight + (rawHeight - maxHeight) * 0.2
+      // Sheet Content
+      if projects.isEmpty {
+        EmptyProjectStateView()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
-        rawHeight
-      }
-
-      VStack(spacing: 0) {
-        // Drag Indicator & Header (Gesture target)
-        VStack(spacing: 8) {
-          Capsule()
-            .fill(Color.secondary.opacity(0.35))
-            .frame(width: 36, height: 5)
-            .padding(.top, 10)
-
-          Text("All Projects")
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(.primary)
-            .padding(.bottom, 8)
-        }
-        .frame(maxWidth: .infinity)
-        .contentShape(Rectangle())
-        .gesture(
-          DragGesture(minimumDistance: 5)
-            .onChanged { value in
-              dragOffset = value.translation.height
-            }
-            .onEnded { value in
-              let predictedEnd = value.predictedEndTranslation.height
-              withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                if predictedEnd < -50 || value.translation.height < -60 {
-                  isExpanded = true
-                } else if predictedEnd > 50 || value.translation.height > 60 {
-                  isExpanded = false
-                }
-                dragOffset = 0
-              }
-            }
-        )
-
-        // Sheet Content
-        if projects.isEmpty {
-          EmptyProjectStateView()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
+        ScrollView(.vertical, showsIndicators: false) {
           ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(alignment: .top, spacing: 14) {
               ForEach(projects) { project in
@@ -89,44 +41,51 @@ struct ProjectListSheet: View {
           }
           .frame(height: 156, alignment: .topLeading)
           .padding(.top, 4)
-
-          Spacer()
         }
       }
-      .frame(width: geometry.size.width, height: clampedHeight, alignment: .top)
-      .background(.background)
-      .clipShape(
-        UnevenRoundedRectangle(
-          topLeadingRadius: 28,
-          bottomLeadingRadius: 0,
-          bottomTrailingRadius: 0,
-          topTrailingRadius: 28,
-          style: .continuous
-        )
-      )
-      .shadow(color: Color.black.opacity(0.1), radius: 16, x: 0, y: -4)
-      .frame(maxHeight: .infinity, alignment: .bottom)
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    .presentationSizing(FullWidthPresentationSizing())
+    .presentationDetents(
+      [
+        ProjectViewModel.defaultSheetDetent,
+        ProjectViewModel.expandedSheetDetent
+      ]
+    )
+    .presentationDragIndicator(.visible)
+    .presentationBackground(.background)
+    .presentationBackgroundInteraction(.enabled)
+    .presentationContentInteraction(.scrolls)
+    .interactiveDismissDisabled()
+  }
+}
+
+struct FullWidthPresentationSizing: PresentationSizing {
+  func proposedSize(
+    for _: PresentationSizingRoot,
+    context _: PresentationSizingContext
+  ) -> ProposedViewSize {
+    ProposedViewSize(width: .infinity, height: nil)
   }
 }
 
 #Preview("With Projects") {
-  ZStack {
-    Color.black.ignoresSafeArea()
-    ProjectListSheet(projects: Project.sampleProjects)
-  }
+  Color.black.ignoresSafeArea()
+    .sheet(isPresented: .constant(true)) {
+      ProjectListSheet(projects: Project.sampleProjects)
+    }
 }
 
 #Preview("Single Project") {
-  ZStack {
-    Color.black.ignoresSafeArea()
-    ProjectListSheet(projects: [Project.sampleProjects[0]])
-  }
+  Color.black.ignoresSafeArea()
+    .sheet(isPresented: .constant(true)) {
+      ProjectListSheet(projects: [Project.sampleProjects[0]])
+    }
 }
 
 #Preview("Empty State") {
-  ZStack {
-    Color.black.ignoresSafeArea()
-    ProjectListSheet(projects: [])
-  }
+  Color.black.ignoresSafeArea()
+    .sheet(isPresented: .constant(true)) {
+      ProjectListSheet(projects: [])
+    }
 }
