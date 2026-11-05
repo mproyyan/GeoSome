@@ -29,6 +29,24 @@ struct BoundaryPoint: Identifiable, Equatable, Sendable {
   var coordinate: CLLocationCoordinate2D {
     CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
   }
+
+  private static let coordinateFormat = FloatingPointFormatStyle<Double>(
+    locale: Locale(identifier: "en_US_POSIX")
+  )
+  .grouping(.never)
+  .precision(.fractionLength(0 ... 6))
+
+  var formattedLatitude: String {
+    latitude.formatted(Self.coordinateFormat)
+  }
+
+  var formattedLongitude: String {
+    longitude.formatted(Self.coordinateFormat)
+  }
+
+  var formattedCoordinate: String {
+    "\(formattedLatitude), \(formattedLongitude)"
+  }
 }
 
 enum BoundaryMapConfiguration {

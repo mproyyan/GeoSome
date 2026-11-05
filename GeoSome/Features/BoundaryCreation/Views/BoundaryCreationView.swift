@@ -27,6 +27,13 @@ struct BoundaryCreationView: View {
     )
   }
 
+  private var editCoordinateSheetBinding: Binding<BoundaryPoint?> {
+    Binding(
+      get: { isCurrentDestination ? viewModel.editingPoint : nil },
+      set: { viewModel.editingPoint = $0 }
+    )
+  }
+
   var body: some View {
     @Bindable var viewModel = viewModel
 
@@ -59,11 +66,15 @@ struct BoundaryCreationView: View {
       case .boundaryCoordinate:
         BoundaryCoordinateSheetView(
           isTooltipVisible: $viewModel.isTooltipVisible,
+          points: viewModel.points,
           onHelpTap: {
             viewModel.toggleTooltip()
           },
           onAddCoordinateTap: {
             viewModel.addCoordinate()
+          },
+          onSelectPoint: { point in
+            viewModel.selectPointForEditing(point)
           }
         )
         .presentationPlacement(.leading)
@@ -71,6 +82,7 @@ struct BoundaryCreationView: View {
           [
             BoundaryCreationViewModel.collapsedSheetDetent,
             BoundaryCreationViewModel.defaultSheetDetent,
+            BoundaryCreationViewModel.populatedSheetDetent,
             .medium,
             .large
           ],
@@ -107,6 +119,43 @@ struct BoundaryCreationView: View {
           .presentationDragIndicator(.visible)
           .presentationBackgroundInteraction(.enabled)
           .interactiveDismissDisabled(viewModel.hasUnsavedCoordinateInput)
+        }
+        .sheet(item: editCoordinateSheetBinding) { point in
+          BoundaryEditCoordinateSheetView(
+            pointTitle: viewModel.title(for: point),
+            latitudeText: $viewModel.editLatitudeText,
+            longitudeText: $viewModel.editLongitudeText,
+            isDeleteConfirmationPresented: $viewModel.isDeletePointAlertPresented,
+            isDiscardConfirmationPresented: $viewModel.isEditDiscardConfirmationPresented,
+            isInvalidCoordinateAlertPresented: $viewModel.isEditInvalidCoordinateAlertPresented,
+            canSubmit: viewModel.canSubmitEditedCoordinate,
+            onCloseTap: {
+              viewModel.requestDismissEditCoordinateSheet()
+            },
+            onDiscardConfirm: {
+              viewModel.confirmDiscardEditCoordinateChanges()
+            },
+            onSubmitTap: {
+              viewModel.submitEditedCoordinate()
+            },
+            onDeleteTap: {
+              viewModel.requestDeleteEditingPoint()
+            },
+            onDeleteConfirm: {
+              viewModel.confirmDeleteEditingPoint()
+            }
+          )
+          .presentationPlacement(.leading)
+          .presentationDetents(
+            [
+              BoundaryCreationViewModel.editSheetDetent,
+              .medium,
+              .large
+            ]
+          )
+          .presentationDragIndicator(.visible)
+          .presentationBackgroundInteraction(.enabled)
+          .interactiveDismissDisabled(viewModel.hasUnsavedEditCoordinateChanges)
         }
       case .projectList:
         EmptyView()

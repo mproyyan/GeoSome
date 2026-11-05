@@ -9,6 +9,8 @@ import SwiftUI
 final class BoundaryCreationViewModel {
   static let collapsedSheetDetent: PresentationDetent = .height(68)
   static let defaultSheetDetent: PresentationDetent = .height(260)
+  static let editSheetDetent: PresentationDetent = .height(370)
+  static let populatedSheetDetent: PresentationDetent = .height(420)
 
   var projectName: String
   var cameraPosition: MapCameraPosition
@@ -18,6 +20,12 @@ final class BoundaryCreationViewModel {
   var isAddCoordinateSheetPresented: Bool
   var isDiscardConfirmationPresented: Bool
   var isInvalidCoordinateAlertPresented: Bool
+  var editingPoint: BoundaryPoint?
+  var editLatitudeText: String
+  var editLongitudeText: String
+  var isDeletePointAlertPresented: Bool
+  var isEditDiscardConfirmationPresented: Bool
+  var isEditInvalidCoordinateAlertPresented: Bool
   var coordinateInputText: String
   var isTooltipVisible: Bool
 
@@ -37,6 +45,18 @@ final class BoundaryCreationViewModel {
     hasUnsavedCoordinateInput
   }
 
+  var hasUnsavedEditCoordinateChanges: Bool {
+    guard let editingPoint else { return false }
+    let trimmedLat = editLatitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+    let trimmedLon = editLongitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmedLat != editingPoint.formattedLatitude || trimmedLon != editingPoint.formattedLongitude
+  }
+
+  var canSubmitEditedCoordinate: Bool {
+    !editLatitudeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+      !editLongitudeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+  }
+
   init(
     projectName: String = "Project name",
     cameraPosition: MapCameraPosition? = nil,
@@ -46,6 +66,12 @@ final class BoundaryCreationViewModel {
     isAddCoordinateSheetPresented: Bool = false,
     isDiscardConfirmationPresented: Bool = false,
     isInvalidCoordinateAlertPresented: Bool = false,
+    editingPoint: BoundaryPoint? = nil,
+    editLatitudeText: String = "",
+    editLongitudeText: String = "",
+    isDeletePointAlertPresented: Bool = false,
+    isEditDiscardConfirmationPresented: Bool = false,
+    isEditInvalidCoordinateAlertPresented: Bool = false,
     coordinateInputText: String = "",
     isTooltipVisible: Bool = false,
     points: [BoundaryPoint] = []
@@ -58,6 +84,12 @@ final class BoundaryCreationViewModel {
     self.isAddCoordinateSheetPresented = isAddCoordinateSheetPresented
     self.isDiscardConfirmationPresented = isDiscardConfirmationPresented
     self.isInvalidCoordinateAlertPresented = isInvalidCoordinateAlertPresented
+    self.editingPoint = editingPoint
+    self.editLatitudeText = editLatitudeText
+    self.editLongitudeText = editLongitudeText
+    self.isDeletePointAlertPresented = isDeletePointAlertPresented
+    self.isEditDiscardConfirmationPresented = isEditDiscardConfirmationPresented
+    self.isEditInvalidCoordinateAlertPresented = isEditInvalidCoordinateAlertPresented
     self.coordinateInputText = coordinateInputText
     self.isTooltipVisible = isTooltipVisible
     self.points = points
@@ -72,6 +104,7 @@ final class BoundaryCreationViewModel {
   func dismissCoordinateSheet() {
     isDiscardConfirmationPresented = false
     isInvalidCoordinateAlertPresented = false
+    dismissEditCoordinateSheet()
     isAddCoordinateSheetPresented = false
     activeSheet = nil
   }
@@ -82,6 +115,80 @@ final class BoundaryCreationViewModel {
 
   func addCoordinate() {
     isAddCoordinateSheetPresented = true
+  }
+
+  func title(for point: BoundaryPoint) -> String {
+    if let index = points.firstIndex(where: { $0.id == point.id }) {
+      return "CPT Point \(index + 1)"
+    }
+    return "CPT Point 1"
+  }
+
+  func selectPointForEditing(_ point: BoundaryPoint) {
+    isDeletePointAlertPresented = false
+    isEditDiscardConfirmationPresented = false
+    isEditInvalidCoordinateAlertPresented = false
+    editLatitudeText = point.formattedLatitude
+    editLongitudeText = point.formattedLongitude
+    editingPoint = point
+  }
+
+  func requestDismissEditCoordinateSheet() {
+    if hasUnsavedEditCoordinateChanges {
+      isEditDiscardConfirmationPresented = true
+    } else {
+      dismissEditCoordinateSheet()
+    }
+  }
+
+  func confirmDiscardEditCoordinateChanges() {
+    dismissEditCoordinateSheet()
+  }
+
+  func dismissEditCoordinateSheet() {
+    isDeletePointAlertPresented = false
+    isEditDiscardConfirmationPresented = false
+    isEditInvalidCoordinateAlertPresented = false
+    editLatitudeText = ""
+    editLongitudeText = ""
+    editingPoint = nil
+  }
+
+  func submitEditedCoordinate() {
+    guard
+      let editingPoint,
+      let updatedCoordinate = Self.parseCoordinatePair(
+        latitudeText: editLatitudeText,
+        longitudeText: editLongitudeText
+      )
+    else {
+      isEditInvalidCoordinateAlertPresented = true
+      return
+    }
+
+    if let index = points.firstIndex(where: { $0.id == editingPoint.id }) {
+      points[index] = BoundaryPoint(
+        id: editingPoint.id,
+        latitude: updatedCoordinate.latitude,
+        longitude: updatedCoordinate.longitude
+      )
+    }
+
+    dismissEditCoordinateSheet()
+  }
+
+  func requestDeleteEditingPoint() {
+    isDeletePointAlertPresented = true
+  }
+
+  func confirmDeleteEditingPoint() {
+    if let editingPoint {
+      points.removeAll { $0.id == editingPoint.id }
+    }
+    if points.isEmpty {
+      selectedSheetDetent = Self.defaultSheetDetent
+    }
+    dismissEditCoordinateSheet()
   }
 
   func requestDismissAddCoordinateSheet() {
@@ -104,31 +211,63 @@ final class BoundaryCreationViewModel {
   }
 
   func submitCoordinate() {
-    guard Self.isValidCoordinateInput(coordinateInputText) else {
+    guard let parsedPoints = Self.parseCoordinates(coordinateInputText) else {
       isInvalidCoordinateAlertPresented = true
       return
     }
 
+    points.append(contentsOf: parsedPoints)
+    if points.count >= 3, selectedSheetDetent == Self.defaultSheetDetent {
+      selectedSheetDetent = Self.populatedSheetDetent
+    }
     dismissAddCoordinateSheet()
   }
 
   static func isValidCoordinateInput(_ text: String) -> Bool {
-    let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !trimmedText.isEmpty else { return false }
-
-    let lines = trimmedText.components(separatedBy: .newlines)
-    return lines.allSatisfy { isValidCoordinateLine($0) }
+    parseCoordinates(text) != nil
   }
 
-  private static func isValidCoordinateLine(_ line: String) -> Bool {
+  static func parseCoordinates(_ text: String) -> [BoundaryPoint]? {
+    let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedText.isEmpty else { return nil }
+
+    let lines = trimmedText.components(separatedBy: .newlines)
+    var result: [BoundaryPoint] = []
+    result.reserveCapacity(lines.count)
+
+    for line in lines {
+      guard let point = parseCoordinateLine(line) else {
+        return nil
+      }
+      result.append(point)
+    }
+
+    return result
+  }
+
+  private static func parseCoordinateLine(_ line: String) -> BoundaryPoint? {
     let trimmedLine = line.trimmingCharacters(in: .whitespaces)
-    guard !trimmedLine.isEmpty else { return false }
+    guard !trimmedLine.isEmpty else { return nil }
 
     let parts = trimmedLine.split(separator: ",", omittingEmptySubsequences: false)
-    guard parts.count == 2 else { return false }
+    guard parts.count == 2,
+          let coordinate = parseCoordinatePair(
+            latitudeText: String(parts[0]),
+            longitudeText: String(parts[1])
+          )
+    else {
+      return nil
+    }
 
-    let latString = parts[0].trimmingCharacters(in: .whitespaces)
-    let lonString = parts[1].trimmingCharacters(in: .whitespaces)
+    return BoundaryPoint(latitude: coordinate.latitude, longitude: coordinate.longitude)
+  }
+
+  static func parseCoordinatePair(
+    latitudeText: String,
+    longitudeText: String
+  ) -> CLLocationCoordinate2D? {
+    let latString = latitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
+    let lonString = longitudeText.trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard
       let latitude = Double(latString),
@@ -136,11 +275,15 @@ final class BoundaryCreationViewModel {
       latitude.isFinite,
       longitude.isFinite
     else {
-      return false
+      return nil
     }
 
     let coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    return CLLocationCoordinate2DIsValid(coordinate)
+    guard CLLocationCoordinate2DIsValid(coordinate) else {
+      return nil
+    }
+
+    return coordinate
   }
 
   func toggleTooltip() {
