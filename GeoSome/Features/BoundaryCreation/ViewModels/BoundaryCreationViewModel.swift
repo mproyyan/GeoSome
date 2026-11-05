@@ -473,6 +473,9 @@ final class BoundaryCreationViewModel {
     guard !points.isEmpty else { return }
     recordUndoSnapshot()
     points.removeAll()
+    if editingPoint != nil {
+      dismissEditCoordinateSheet()
+    }
     syncSheetDetentForPointCount()
   }
 
@@ -487,6 +490,9 @@ final class BoundaryCreationViewModel {
     )
     projectName = previousSnapshot.projectName
     points = previousSnapshot.points
+    if let editingPoint, !points.contains(where: { $0.id == editingPoint.id }) {
+      dismissEditCoordinateSheet()
+    }
     syncSheetDetentForPointCount()
   }
 
@@ -501,6 +507,9 @@ final class BoundaryCreationViewModel {
     )
     projectName = nextSnapshot.projectName
     points = nextSnapshot.points
+    if let editingPoint, !points.contains(where: { $0.id == editingPoint.id }) {
+      dismissEditCoordinateSheet()
+    }
     syncSheetDetentForPointCount()
   }
 

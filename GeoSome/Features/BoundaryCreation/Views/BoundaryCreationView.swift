@@ -2,6 +2,23 @@ import MapKit
 import SwiftUI
 
 struct BoundaryCreationView: View {
+  private enum ActiveBoundarySheet: Identifiable {
+    case coordinateList
+    case addCoordinate
+    case editCoordinate(BoundaryPoint)
+
+    var id: String {
+      switch self {
+      case .coordinateList:
+        "coordinateList"
+      case .addCoordinate:
+        "addCoordinate"
+      case let .editCoordinate(point):
+        "editCoordinate-\(point.id.uuidString)"
+      }
+    }
+  }
+
   @Environment(AppRouter.self) private var router
   @Environment(ProjectViewModel.self) private var projectViewModel: ProjectViewModel?
   @State private var viewModel: BoundaryCreationViewModel
@@ -21,24 +38,54 @@ struct BoundaryCreationView: View {
     )
   }
 
-  private var sheetBinding: Binding<SheetDestination?> {
+  private var activeSheetBinding: Binding<ActiveBoundarySheet?> {
     Binding(
-      get: { isCurrentDestination ? viewModel.activeSheet : nil },
-      set: { viewModel.activeSheet = $0 }
-    )
-  }
-
-  private var addCoordinateSheetBinding: Binding<Bool> {
-    Binding(
-      get: { isCurrentDestination && viewModel.isAddCoordinateSheetPresented },
-      set: { viewModel.isAddCoordinateSheetPresented = $0 }
-    )
-  }
-
-  private var editCoordinateSheetBinding: Binding<BoundaryPoint?> {
-    Binding(
-      get: { isCurrentDestination ? viewModel.editingPoint : nil },
-      set: { viewModel.editingPoint = $0 }
+      get: {
+        guard isCurrentDestination, viewModel.activeSheet == .boundaryCoordinate else {
+          return nil
+        }
+        if let editingPoint = viewModel.editingPoint {
+          return .editCoordinate(editingPoint)
+        }
+        if viewModel.isAddCoordinateSheetPresented {
+          return .addCoordinate
+        }
+        return .coordinateList
+      },
+      set: { newValue in
+        switch newValue {
+        case .coordinateList:
+          viewModel.isAddCoordinateSheetPresented = false
+          viewModel.editingPoint = nil
+          viewModel.activeSheet = .boundaryCoordinate
+        case .addCoordinate:
+          viewModel.isAddCoordinateSheetPresented = true
+        case let .editCoordinate(point):
+          viewModel.editingPoint = point
+        case nil:
+          if viewModel.editingPoint != nil {
+            viewModel.dismissEditCoordinateSheet()
+            viewModel.activeSheet = nil
+            Task { @MainActor in
+              try? await Task.sleep(for: .milliseconds(100))
+              if isCurrentDestination {
+                viewModel.presentCoordinateSheet()
+              }
+            }
+          } else if viewModel.isAddCoordinateSheetPresented {
+            viewModel.dismissAddCoordinateSheet()
+            viewModel.activeSheet = nil
+            Task { @MainActor in
+              try? await Task.sleep(for: .milliseconds(100))
+              if isCurrentDestination {
+                viewModel.presentCoordinateSheet()
+              }
+            }
+          } else {
+            viewModel.activeSheet = nil
+          }
+        }
+      }
     )
   }
 
@@ -76,9 +123,9 @@ struct BoundaryCreationView: View {
       .padding(.trailing, 20)
       .padding(.bottom, 28)
     }
-    .sheet(item: sheetBinding) { destination in
+    .sheet(item: activeSheetBinding) { destination in
       switch destination {
-      case .boundaryCoordinate:
+      case .coordinateList:
         BoundaryCoordinateSheetView(
           isTooltipVisible: $viewModel.isTooltipVisible,
           points: viewModel.points,
@@ -110,73 +157,71 @@ struct BoundaryCreationView: View {
         .presentationBackgroundInteraction(.enabled)
         .presentationContentInteraction(.scrolls)
         .interactiveDismissDisabled()
-        .sheet(isPresented: addCoordinateSheetBinding) {
-          BoundaryAddCoordinateSheetView(
-            coordinateText: $viewModel.coordinateInputText,
-            isDiscardConfirmationPresented: $viewModel.isDiscardConfirmationPresented,
-            isInvalidCoordinateAlertPresented: $viewModel.isInvalidCoordinateAlertPresented,
-            canSubmit: viewModel.canSubmitCoordinate,
-            onCloseTap: {
-              viewModel.requestDismissAddCoordinateSheet()
-            },
-            onDiscardConfirm: {
-              viewModel.confirmDiscardCoordinateInput()
-            },
-            onSubmitTap: {
-              viewModel.submitCoordinate()
-            }
-          )
-          .presentationPlacement(.leading)
-          .presentationDetents(
-            [
-              BoundaryCreationViewModel.defaultSheetDetent,
-              .medium,
-              .large
-            ]
-          )
-          .presentationDragIndicator(.visible)
-          .presentationBackgroundInteraction(.enabled)
-          .interactiveDismissDisabled(viewModel.hasUnsavedCoordinateInput)
-        }
-        .sheet(item: editCoordinateSheetBinding) { point in
-          BoundaryEditCoordinateSheetView(
-            pointTitle: viewModel.title(for: point),
-            latitudeText: $viewModel.editLatitudeText,
-            longitudeText: $viewModel.editLongitudeText,
-            isDeleteConfirmationPresented: $viewModel.isDeletePointAlertPresented,
-            isDiscardConfirmationPresented: $viewModel.isEditDiscardConfirmationPresented,
-            isInvalidCoordinateAlertPresented: $viewModel.isEditInvalidCoordinateAlertPresented,
-            canSubmit: viewModel.canSubmitEditedCoordinate,
-            onCloseTap: {
-              viewModel.requestDismissEditCoordinateSheet()
-            },
-            onDiscardConfirm: {
-              viewModel.confirmDiscardEditCoordinateChanges()
-            },
-            onSubmitTap: {
-              viewModel.submitEditedCoordinate()
-            },
-            onDeleteTap: {
-              viewModel.requestDeleteEditingPoint()
-            },
-            onDeleteConfirm: {
-              viewModel.confirmDeleteEditingPoint()
-            }
-          )
-          .presentationPlacement(.leading)
-          .presentationDetents(
-            [
-              BoundaryCreationViewModel.editSheetDetent,
-              .medium,
-              .large
-            ]
-          )
-          .presentationDragIndicator(.visible)
-          .presentationBackgroundInteraction(.enabled)
-          .interactiveDismissDisabled(viewModel.hasUnsavedEditCoordinateChanges)
-        }
-      case .projectList:
-        EmptyView()
+
+      case .addCoordinate:
+        BoundaryAddCoordinateSheetView(
+          coordinateText: $viewModel.coordinateInputText,
+          isDiscardConfirmationPresented: $viewModel.isDiscardConfirmationPresented,
+          isInvalidCoordinateAlertPresented: $viewModel.isInvalidCoordinateAlertPresented,
+          canSubmit: viewModel.canSubmitCoordinate,
+          onCloseTap: {
+            viewModel.requestDismissAddCoordinateSheet()
+          },
+          onDiscardConfirm: {
+            viewModel.confirmDiscardCoordinateInput()
+          },
+          onSubmitTap: {
+            viewModel.submitCoordinate()
+          }
+        )
+        .presentationPlacement(.leading)
+        .presentationDetents(
+          [
+            BoundaryCreationViewModel.defaultSheetDetent,
+            .medium,
+            .large
+          ]
+        )
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled)
+        .interactiveDismissDisabled(viewModel.hasUnsavedCoordinateInput)
+
+      case let .editCoordinate(point):
+        BoundaryEditCoordinateSheetView(
+          pointTitle: viewModel.title(for: point),
+          latitudeText: $viewModel.editLatitudeText,
+          longitudeText: $viewModel.editLongitudeText,
+          isDeleteConfirmationPresented: $viewModel.isDeletePointAlertPresented,
+          isDiscardConfirmationPresented: $viewModel.isEditDiscardConfirmationPresented,
+          isInvalidCoordinateAlertPresented: $viewModel.isEditInvalidCoordinateAlertPresented,
+          canSubmit: viewModel.canSubmitEditedCoordinate,
+          onCloseTap: {
+            viewModel.requestDismissEditCoordinateSheet()
+          },
+          onDiscardConfirm: {
+            viewModel.confirmDiscardEditCoordinateChanges()
+          },
+          onSubmitTap: {
+            viewModel.submitEditedCoordinate()
+          },
+          onDeleteTap: {
+            viewModel.requestDeleteEditingPoint()
+          },
+          onDeleteConfirm: {
+            viewModel.confirmDeleteEditingPoint()
+          }
+        )
+        .presentationPlacement(.leading)
+        .presentationDetents(
+          [
+            BoundaryCreationViewModel.editSheetDetent,
+            .medium,
+            .large
+          ]
+        )
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled)
+        .interactiveDismissDisabled(viewModel.hasUnsavedEditCoordinateChanges)
       }
     }
     .task {
