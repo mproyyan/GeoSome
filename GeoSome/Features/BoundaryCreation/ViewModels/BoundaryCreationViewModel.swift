@@ -189,12 +189,13 @@ final class BoundaryCreationViewModel {
   }
 
   func selectPointForEditing(_ point: BoundaryPoint) {
+    let currentPoint = points.first(where: { $0.id == point.id }) ?? point
     isDeletePointAlertPresented = false
     isEditDiscardConfirmationPresented = false
     isEditInvalidCoordinateAlertPresented = false
-    editLatitudeText = point.formattedLatitude
-    editLongitudeText = point.formattedLongitude
-    editingPoint = point
+    editLatitudeText = currentPoint.formattedLatitude
+    editLongitudeText = currentPoint.formattedLongitude
+    editingPoint = currentPoint
   }
 
   func requestDismissEditCoordinateSheet() {
@@ -231,11 +232,8 @@ final class BoundaryCreationViewModel {
     }
 
     if let index = points.firstIndex(where: { $0.id == editingPoint.id }) {
-      points[index] = BoundaryPoint(
-        id: editingPoint.id,
-        latitude: updatedCoordinate.latitude,
-        longitude: updatedCoordinate.longitude
-      )
+      points[index].latitude = updatedCoordinate.latitude
+      points[index].longitude = updatedCoordinate.longitude
     }
 
     dismissEditCoordinateSheet()
@@ -249,7 +247,7 @@ final class BoundaryCreationViewModel {
     if let editingPoint {
       points.removeAll { $0.id == editingPoint.id }
     }
-    if points.isEmpty {
+    if points.count < 3, selectedSheetDetent == Self.populatedSheetDetent {
       selectedSheetDetent = Self.defaultSheetDetent
     }
     dismissEditCoordinateSheet()

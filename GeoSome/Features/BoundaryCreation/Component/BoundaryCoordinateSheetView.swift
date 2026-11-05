@@ -250,19 +250,26 @@ struct BoundaryCoordinateSheetView: View {
 
 #Preview("3+ Coordinates") {
   @Previewable @State var selectedDetent: PresentationDetent = BoundaryCreationViewModel.populatedSheetDetent
-  @Previewable @State var editingPoint: BoundaryPoint?
-
-  let samplePoints = [
+  @Previewable @State var samplePoints = [
     BoundaryPoint(latitude: -6.215432, longitude: 106.845321),
-    BoundaryPoint(latitude: -6.215432, longitude: 106.845321),
-    BoundaryPoint(latitude: -6.215432, longitude: 106.845321)
+    BoundaryPoint(latitude: -6.216543, longitude: 106.849876),
+    BoundaryPoint(latitude: -6.218123, longitude: 106.842111)
   ]
+  @Previewable @State var editingPoint: BoundaryPoint?
+  @Previewable @State var editLatText = ""
+  @Previewable @State var editLonText = ""
+  @Previewable @State var isDeleteAlertPresented = false
+  @Previewable @State var isDiscardAlertPresented = false
+  @Previewable @State var isInvalidAlertPresented = false
 
   Text("Map Content")
     .sheet(isPresented: .constant(true)) {
       BoundaryCoordinateSheetView(
         points: samplePoints,
+        boundaryPointsText: "\(samplePoints.count) \(samplePoints.count == 1 ? "point" : "points")",
         onSelectPoint: { point in
+          editLatText = point.formattedLatitude
+          editLonText = point.formattedLongitude
           editingPoint = point
         }
       )
@@ -285,8 +292,27 @@ struct BoundaryCoordinateSheetView: View {
         let index = samplePoints.firstIndex(where: { $0.id == point.id }) ?? 0
         BoundaryEditCoordinateSheetView(
           pointTitle: "CPT Point \(index + 1)",
-          latitudeText: .constant(point.formattedLatitude),
-          longitudeText: .constant(point.formattedLongitude)
+          latitudeText: $editLatText,
+          longitudeText: $editLonText,
+          isDeleteConfirmationPresented: $isDeleteAlertPresented,
+          isDiscardConfirmationPresented: $isDiscardAlertPresented,
+          isInvalidCoordinateAlertPresented: $isInvalidAlertPresented,
+          onSubmitTap: {
+            if let coordinate = BoundaryCreationViewModel.parseCoordinatePair(
+              latitudeText: editLatText,
+              longitudeText: editLonText
+            ) {
+              samplePoints[index].latitude = coordinate.latitude
+              samplePoints[index].longitude = coordinate.longitude
+              editingPoint = nil
+            } else {
+              isInvalidAlertPresented = true
+            }
+          },
+          onDeleteConfirm: {
+            samplePoints.removeAll { $0.id == point.id }
+            editingPoint = nil
+          }
         )
         .presentationPlacement(.leading)
         .presentationDetents([BoundaryCreationViewModel.editSheetDetent, .medium, .large])

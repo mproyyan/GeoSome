@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct BoundaryEditCoordinateSheetView: View {
+  private enum Field: Hashable {
+    case latitude
+    case longitude
+  }
+
   @Environment(\.dismiss) private var dismiss
   var pointTitle: String
   @Binding var latitudeText: String
@@ -14,6 +19,8 @@ struct BoundaryEditCoordinateSheetView: View {
   var onSubmitTap: (() -> Void)?
   var onDeleteTap: (() -> Void)?
   var onDeleteConfirm: (() -> Void)?
+
+  @FocusState private var focusedField: Field?
 
   init(
     pointTitle: String = "CPT Point 1",
@@ -70,12 +77,19 @@ struct BoundaryEditCoordinateSheetView: View {
             .font(.body)
             .foregroundStyle(.primary)
             .keyboardType(.numbersAndPunctuation)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+            .focused($focusedField, equals: .latitude)
             .padding(.horizontal, 16)
             .frame(height: 46)
             .background(
               Capsule(style: .continuous)
                 .fill(.background)
             )
+            .contentShape(Capsule(style: .continuous))
+            .onTapGesture {
+              focusedField = .latitude
+            }
             .accessibilityLabel("Latitude")
         }
 
@@ -88,18 +102,26 @@ struct BoundaryEditCoordinateSheetView: View {
             .font(.body)
             .foregroundStyle(.primary)
             .keyboardType(.numbersAndPunctuation)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+            .focused($focusedField, equals: .longitude)
             .padding(.horizontal, 16)
             .frame(height: 46)
             .background(
               Capsule(style: .continuous)
                 .fill(.background)
             )
+            .contentShape(Capsule(style: .continuous))
+            .onTapGesture {
+              focusedField = .longitude
+            }
             .accessibilityLabel("Longitude")
         }
 
         Spacer(minLength: 4)
 
         Button(role: .destructive) {
+          focusedField = nil
           if let onDeleteTap {
             onDeleteTap()
           } else {
@@ -126,6 +148,7 @@ struct BoundaryEditCoordinateSheetView: View {
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button(role: .close) {
+            focusedField = nil
             if let onCloseTap {
               onCloseTap()
             } else {
@@ -136,6 +159,7 @@ struct BoundaryEditCoordinateSheetView: View {
 
         ToolbarItem(placement: .confirmationAction) {
           Button(role: .confirm) {
+            focusedField = nil
             if let onSubmitTap {
               onSubmitTap()
             } else if BoundaryCreationViewModel.parseCoordinatePair(
